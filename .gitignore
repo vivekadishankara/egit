@@ -1,0 +1,5 @@
+/target
+/site
+/node_modules
+/.env
+*.db

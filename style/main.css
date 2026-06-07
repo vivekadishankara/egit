@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme definitions ─────────────────────────────────────────────── */
+
+:root,
+[data-theme="dark"] {
+    --color-bg: #0d1117;
+    --color-bg-secondary: #161b22;
+    --color-bg-tertiary: #21262d;
+    --color-border: #30363d;
+    --color-text: #e6edf3;
+    --color-text-muted: #8b949e;
+    --color-accent: #58a6ff;
+    --color-accent-hover: #79b8ff;
+    --color-success: #3fb950;
+    --color-danger: #f85149;
+    --color-warning: #d29922;
+}
+
+[data-theme="light"] {
+    --color-bg: #ffffff;
+    --color-bg-secondary: #f6f8fa;
+    --color-bg-tertiary: #eaeef2;
+    --color-border: #d0d7de;
+    --color-text: #1f2328;
+    --color-text-muted: #636c76;
+    --color-accent: #0969da;
+    --color-accent-hover: #0550ae;
+    --color-success: #1a7f37;
+    --color-danger: #cf222e;
+    --color-warning: #9a6700;
+}
+
+[data-theme="dracula"] {
+    --color-bg: #282a36;
+    --color-bg-secondary: #1e1f29;
+    --color-bg-tertiary: #343746;
+    --color-border: #44475a;
+    --color-text: #f8f8f2;
+    --color-text-muted: #6272a4;
+    --color-accent: #bd93f9;
+    --color-accent-hover: #caa9fa;
+    --color-success: #50fa7b;
+    --color-danger: #ff5555;
+    --color-warning: #f1fa8c;
+}
+
+[data-theme="nord"] {
+    --color-bg: #2e3440;
+    --color-bg-secondary: #242933;
+    --color-bg-tertiary: #3b4252;
+    --color-border: #434c5e;
+    --color-text: #eceff4;
+    --color-text-muted: #9099a3;
+    --color-accent: #88c0d0;
+    --color-accent-hover: #81b1c4;
+    --color-success: #a3be8c;
+    --color-danger: #bf616a;
+    --color-warning: #ebcb8b;
+}
+
+[data-theme="solarized"] {
+    --color-bg: #002b36;
+    --color-bg-secondary: #073642;
+    --color-bg-tertiary: #0d3c48;
+    --color-border: #1c4a58;
+    --color-text: #839496;
+    --color-text-muted: #586e75;
+    --color-accent: #268bd2;
+    --color-accent-hover: #2aa198;
+    --color-success: #859900;
+    --color-danger: #dc322f;
+    --color-warning: #b58900;
+}
+
+[data-theme="gruvbox"] {
+    --color-bg: #282828;
+    --color-bg-secondary: #1d2021;
+    --color-bg-tertiary: #3c3836;
+    --color-border: #504945;
+    --color-text: #ebdbb2;
+    --color-text-muted: #a89984;
+    --color-accent: #83a598;
+    --color-accent-hover: #8ec07c;
+    --color-success: #b8bb26;
+    --color-danger: #fb4934;
+    --color-warning: #fabd2f;
+}
+
+/* ── Base styles ───────────────────────────────────────────────────── */
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+
+/* ── Component layer ───────────────────────────────────────────────── */
+
+@layer components {
+    /* Layout */
+    .container {
+        @apply max-w-6xl mx-auto px-4 py-8;
+    }
+
+    /* Navbar */
+    .navbar {
+        background-color: var(--color-bg-secondary);
+        border-bottom: 1px solid var(--color-border);
+        @apply sticky top-0 z-50;
+    }
+    .navbar-inner {
+        @apply max-w-6xl mx-auto px-4 h-14 flex items-center justify-between;
+    }
+    .navbar-brand {
+        @apply flex items-center gap-2 no-underline;
+    }
+    .navbar-links {
+        @apply flex items-center gap-3;
+    }
+    .navbar-link {
+        color: var(--color-text-muted);
+        @apply text-sm hover:text-[var(--color-text)] transition-colors no-underline;
+    }
+
+    /* Buttons */
+    .btn-primary {
+        background-color: var(--color-accent);
+        color: #fff;
+        @apply px-4 py-1.5 rounded-md text-sm font-medium no-underline
+               hover:opacity-90 transition-opacity cursor-pointer inline-block;
+    }
+    .btn-secondary {
+        background-color: var(--color-bg-tertiary);
+        color: var(--color-text);
+        border: 1px solid var(--color-border);
+        @apply px-4 py-1.5 rounded-md text-sm font-medium no-underline
+               hover:border-[var(--color-accent)] transition-colors cursor-pointer inline-block;
+    }
+    .btn-danger {
+        background-color: var(--color-danger);
+        color: #fff;
+        @apply px-4 py-1.5 rounded-md text-sm font-medium no-underline
+               hover:opacity-90 transition-opacity cursor-pointer inline-block;
+    }
+
+    /* Forms */
+    .input {
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border);
+        color: var(--color-text);
+        @apply w-full px-3 py-2 rounded-md text-sm outline-none
+               focus:border-[var(--color-accent)] transition-colors;
+    }
+    .label {
+        color: var(--color-text-muted);
+        @apply block text-sm mb-1;
+    }
+    .form-group {
+        @apply flex flex-col gap-1 mb-4;
+    }
+
+    /* Cards */
+    .card {
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border);
+        @apply rounded-md p-4;
+    }
+
+    /* Auth pages */
+    .auth-container {
+        @apply max-w-sm mx-auto mt-20 px-4;
+    }
+    .auth-title {
+        color: var(--color-text);
+        @apply text-2xl font-semibold mb-6 text-center;
+    }
+
+    /* Hero */
+    .hero {
+        @apply flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4;
+    }
+    .hero-title {
+        color: var(--color-text);
+        @apply text-5xl font-bold;
+    }
+    .hero-subtitle {
+        color: var(--color-text-muted);
+        @apply text-xl max-w-lg;
+    }
+    .hero-actions {
+        @apply flex gap-4;
+    }
+
+    /* Page titles */
+    .page-title {
+        color: var(--color-text);
+        @apply text-2xl font-semibold mb-6;
+    }
+
+    /* Diff viewer */
+    .diff-viewer {
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border);
+        color: var(--color-text);
+        @apply rounded-md p-4 text-sm font-mono overflow-x-auto;
+    }
+
+    /* Markdown */
+    .markdown-body {
+        color: var(--color-text);
+        @apply prose max-w-none;
+    }
+
+    /* Text utilities using CSS vars */
+    .text-bg { color: var(--color-bg); }
+    .text-accent { color: var(--color-accent); }
+    .text-text-muted { color: var(--color-text-muted); }
+    .text-success { color: var(--color-success); }
+    .text-danger { color: var(--color-danger); }
+    .bg-bg { background-color: var(--color-bg); }
+    .bg-secondary { background-color: var(--color-bg-secondary); }
+    .border-border { border-color: var(--color-border); }
+}
