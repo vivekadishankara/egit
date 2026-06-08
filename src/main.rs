@@ -2,6 +2,7 @@ use axum::Router;
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use tower_http::compression::CompressionLayer;
+use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use egit::{app::App, db};
@@ -36,7 +37,12 @@ async fn main() {
     let pool_for_context = pool.clone();
     let repo_path_for_context = repo_base_path.clone();
 
+    // Derive the pkg path from leptos config so it stays in sync with Cargo.toml
+    let site_root = leptos_options.site_root.to_string();
+    let pkg_path = format!("{}/pkg", site_root);
+
     let app = Router::new()
+        .nest_service("/pkg", ServeDir::new(pkg_path))
         .leptos_routes_with_context(
             &leptos_options,
             routes,
