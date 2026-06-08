@@ -4,8 +4,7 @@ pub mod pages;
 
 #[cfg(feature = "ssr")]
 pub mod db;
-#[cfg(feature = "ssr")]
-pub mod state;
+
 #[cfg(feature = "ssr")]
 pub mod auth;
 #[cfg(feature = "ssr")]

@@ -186,7 +186,11 @@ egit/
 
 ```toml
 # Git
-gix = { version = "0.66", features = ["blocking-io"] }
+gix = { version = "0.70", default-features = false, features = [
+    "basic", "extras", "blob-diff",
+    "blocking-network-client",
+    "blocking-http-transport-reqwest-rust-tls",
+] }
 
 # Database
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio", "uuid", "time"] }

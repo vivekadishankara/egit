@@ -32,7 +32,7 @@ pub fn App() -> impl IntoView {
 
         <Router>
             <Navbar/>
-            <main class="min-h-screen bg-bg text-text">
+            <main class="min-h-screen bg-bg text-text-primary">
                 <Routes fallback=|| view! { <NotFound/> }>
                     <Route path=path!("/") view=HomePage/>
                     <Route path=path!("/login") view=LoginPage/>
