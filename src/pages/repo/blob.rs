@@ -12,7 +12,7 @@ pub fn BlobPage() -> impl IntoView {
             <h1 class="page-title">
                 {username} "/" <span class="text-accent">{reponame}</span>
             </h1>
-            <p class="text-text-muted">"File viewer — coming in step 7"</p>
+            <p class="text-muted">"File viewer — coming in step 7"</p>
         </div>
     }
 }

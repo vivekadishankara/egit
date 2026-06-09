@@ -10,7 +10,7 @@ pub fn ProfilePage() -> impl IntoView {
         <div class="container">
             <h1 class="page-title">{username}</h1>
             // TODO: implement in step 11
-            <p class="text-text-muted">"Profile coming soon"</p>
+            <p class="text-muted">"Profile coming soon"</p>
         </div>
     }
 }

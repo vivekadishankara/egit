@@ -74,7 +74,7 @@ fn shell(options: LeptosOptions) -> impl IntoView {
                 <HydrationScripts options=options islands=false/>
                 <leptos_meta::MetaTags/>
             </head>
-            <body class="bg-bg text-text-primary min-h-screen">
+            <body class="bg-surface min-h-screen">
                 <App/>
             </body>
         </html>

@@ -32,7 +32,7 @@ pub fn App() -> impl IntoView {
 
         <Router>
             <Navbar/>
-            <main class="min-h-screen bg-bg text-text-primary">
+            <main class="min-h-screen bg-surface">
                 <Routes fallback=|| view! { <NotFound/> }>
                     <Route path=path!("/") view=HomePage/>
                     <Route path=path!("/login") view=LoginPage/>
@@ -58,7 +58,7 @@ fn NotFound() -> impl IntoView {
     view! {
         <div class="flex flex-col items-center justify-center min-h-[60vh] gap-4">
             <h1 class="text-6xl font-bold text-accent">"404"</h1>
-            <p class="text-text-muted text-lg">"Page not found"</p>
+            <p class="text-muted text-lg">"Page not found"</p>
             <a href="/" class="btn-primary">"Go home"</a>
         </div>
     }

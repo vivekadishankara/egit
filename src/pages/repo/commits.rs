@@ -12,7 +12,7 @@ pub fn CommitsPage() -> impl IntoView {
             <h1 class="page-title">
                 {username} "/" <span class="text-accent">{reponame}</span>
             </h1>
-            <p class="text-text-muted">"Commit log — coming in step 9"</p>
+            <p class="text-muted">"Commit log — coming in step 9"</p>
         </div>
     }
 }

@@ -122,7 +122,17 @@ body {
     }
     .navbar-link {
         color: var(--color-text-muted);
-        @apply text-sm hover:text-[var(--color-text)] transition-colors no-underline;
+        @apply text-sm transition-colors no-underline;
+    }
+    .navbar-link:hover {
+        color: var(--color-text);
+    }
+    .navbar-user {
+        @apply flex items-center gap-3;
+    }
+    .navbar-link-placeholder {
+        background-color: var(--color-bg-tertiary);
+        @apply w-20 h-4 rounded animate-pulse;
     }
 
     /* Buttons */
@@ -130,36 +140,105 @@ body {
         background-color: var(--color-accent);
         color: #fff;
         @apply px-4 py-1.5 rounded-md text-sm font-medium no-underline
-               hover:opacity-90 transition-opacity cursor-pointer inline-block;
+               hover:opacity-90 transition-opacity cursor-pointer inline-block border-0;
     }
     .btn-secondary {
         background-color: var(--color-bg-tertiary);
         color: var(--color-text);
         border: 1px solid var(--color-border);
         @apply px-4 py-1.5 rounded-md text-sm font-medium no-underline
-               hover:border-[var(--color-accent)] transition-colors cursor-pointer inline-block;
+               transition-colors cursor-pointer inline-block;
+    }
+    .btn-secondary:hover {
+        border-color: var(--color-accent);
     }
     .btn-danger {
         background-color: var(--color-danger);
         color: #fff;
         @apply px-4 py-1.5 rounded-md text-sm font-medium no-underline
-               hover:opacity-90 transition-opacity cursor-pointer inline-block;
+               hover:opacity-90 transition-opacity cursor-pointer inline-block border-0;
     }
 
-    /* Forms */
+    /* Forms — base input/label (used outside auth too) */
     .input {
         background-color: var(--color-bg-secondary);
         border: 1px solid var(--color-border);
         color: var(--color-text);
-        @apply w-full px-3 py-2 rounded-md text-sm outline-none
-               focus:border-[var(--color-accent)] transition-colors;
+        @apply w-full px-3 py-2 rounded-md text-sm outline-none transition-colors;
+    }
+    .input:focus {
+        border-color: var(--color-accent);
     }
     .label {
         color: var(--color-text-muted);
         @apply block text-sm mb-1;
     }
+
+    /* Auth pages */
+    .auth-container {
+        @apply flex items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-12;
+    }
+    .auth-card {
+        background-color: var(--color-bg-secondary);
+        border: 1px solid var(--color-border);
+        @apply w-full max-w-md rounded-xl p-8 shadow-lg;
+    }
+    .auth-title {
+        color: var(--color-text);
+        @apply text-2xl font-bold mb-6 text-center;
+    }
+    .auth-footer {
+        color: var(--color-text-muted);
+        @apply mt-6 text-center text-sm;
+    }
+    .auth-link {
+        color: var(--color-accent);
+        @apply underline;
+    }
+    .auth-link:hover {
+        color: var(--color-accent-hover);
+    }
+
+    /* Auth form fields */
     .form-group {
-        @apply flex flex-col gap-1 mb-4;
+        @apply mb-4;
+    }
+    .form-label {
+        color: var(--color-text);
+        @apply block text-sm font-medium mb-1.5;
+    }
+    .form-input {
+        background-color: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border);
+        color: var(--color-text);
+        @apply w-full px-3 py-2 rounded-lg text-sm outline-none transition-colors;
+    }
+    .form-input::placeholder {
+        color: var(--color-text-muted);
+    }
+    .form-input:focus {
+        border-color: var(--color-accent);
+        @apply ring-2;
+        --tw-ring-color: var(--color-accent);
+        --tw-ring-opacity: 0.3;
+    }
+    .form-hint {
+        color: var(--color-text-muted);
+        @apply mt-1 text-xs;
+    }
+
+    /* Alerts */
+    .alert-error {
+        color: var(--color-danger);
+        border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
+        background-color: color-mix(in srgb, var(--color-danger) 10%, transparent);
+        @apply mb-4 px-4 py-3 rounded-lg text-sm;
+    }
+    .alert-success {
+        color: var(--color-success);
+        border: 1px solid color-mix(in srgb, var(--color-success) 30%, transparent);
+        background-color: color-mix(in srgb, var(--color-success) 10%, transparent);
+        @apply mb-4 px-4 py-3 rounded-lg text-sm;
     }
 
     /* Cards */
@@ -167,15 +246,6 @@ body {
         background-color: var(--color-bg-secondary);
         border: 1px solid var(--color-border);
         @apply rounded-md p-4;
-    }
-
-    /* Auth pages */
-    .auth-container {
-        @apply max-w-sm mx-auto mt-20 px-4;
-    }
-    .auth-title {
-        color: var(--color-text);
-        @apply text-2xl font-semibold mb-6 text-center;
     }
 
     /* Hero */
@@ -214,78 +284,14 @@ body {
         @apply prose max-w-none;
     }
 
-    /* Text utilities using CSS vars */
-    .text-bg { color: var(--color-bg); }
-    .text-accent { color: var(--color-accent); }
-    .text-text-muted { color: var(--color-text-muted); }
-    .text-success { color: var(--color-success); }
-    .text-danger { color: var(--color-danger); }
-    .bg-bg { background-color: var(--color-bg); }
-    .bg-secondary { background-color: var(--color-bg-secondary); }
-    .border-border { border-color: var(--color-border); }
-}
-
-/* ── Auth pages ─────────────────────────────────────────────────────── */
-
-.auth-container {
-    @apply flex items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-12;
-}
-
-.auth-card {
-    @apply w-full max-w-md bg-bg-secondary border border-border rounded-xl p-8 shadow-lg;
-}
-
-.auth-title {
-    @apply text-2xl font-bold text-text-primary mb-6 text-center;
-}
-
-.auth-footer {
-    @apply mt-6 text-center text-sm text-text-muted;
-}
-
-.auth-link {
-    @apply text-accent hover:text-accent-hover underline;
-}
-
-/* ── Forms ──────────────────────────────────────────────────────────── */
-
-.form-group {
-    @apply mb-4;
-}
-
-.form-label {
-    @apply block text-sm font-medium text-text-primary mb-1.5;
-}
-
-.form-input {
-    @apply w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg
-           text-text-primary placeholder-text-muted
-           focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent
-           transition-colors;
-}
-
-.form-hint {
-    @apply mt-1 text-xs text-text-muted;
-}
-
-/* ── Alerts ─────────────────────────────────────────────────────────── */
-
-.alert-error {
-    @apply mb-4 px-4 py-3 bg-danger/10 border border-danger/30 rounded-lg
-           text-sm text-danger;
-}
-
-.alert-success {
-    @apply mb-4 px-4 py-3 bg-success/10 border border-success/30 rounded-lg
-           text-sm text-success;
-}
-
-/* ── Navbar user section ────────────────────────────────────────────── */
-
-.navbar-user {
-    @apply flex items-center gap-3;
-}
-
-.navbar-link-placeholder {
-    @apply w-20 h-4 bg-bg-tertiary rounded animate-pulse;
+    /* CSS-var color utilities (used in Leptos class= attributes) */
+    .text-accent        { color: var(--color-accent); }
+    .text-muted         { color: var(--color-text-muted); }
+    .text-success       { color: var(--color-success); }
+    .text-danger        { color: var(--color-danger); }
+    .text-warning       { color: var(--color-warning); }
+    .bg-surface         { background-color: var(--color-bg); }
+    .bg-surface-secondary { background-color: var(--color-bg-secondary); }
+    .bg-surface-tertiary  { background-color: var(--color-bg-tertiary); }
+    .border-theme       { border-color: var(--color-border); }
 }
