@@ -10,7 +10,7 @@ A self-hosted Git forge built entirely in Rust, inspired by GitHub. Full-stack L
 |---|---|
 | Frontend framework | Leptos 0.8 (SSR + hydration) |
 | Build tool | cargo-leptos 0.3.6 |
-| Styling | TailwindCSS v3 (CSS variable-based themes) |
+| Styling | TailwindCSS v3 (CSS variable-based themes, `@layer components`) |
 | Database | PostgreSQL (via sqlx, runtime queries) |
 | Git backend | gitoxide (`gix` crate — pure Rust) |
 | Auth | Username/password (bcrypt hashed, session cookies) |
@@ -22,7 +22,7 @@ A self-hosted Git forge built entirely in Rust, inspired by GitHub. Full-stack L
 ## V1 Feature Scope
 
 ### In scope
-- [ ] User auth (register, login, logout, session management)
+- [x] User auth (register, login, logout, session management)
 - [ ] User profiles (avatar, bio, list of repos)
 - [ ] Repository creation, deletion, basic settings
 - [ ] Repository browser (file tree, file viewer with syntax highlight)
@@ -59,14 +59,24 @@ Use the `gix` crate (gitoxide) for all read operations: file tree traversal, blo
 
 ### Auth
 - Passwords hashed with `bcrypt`
-- Sessions stored in PostgreSQL (`sessions` table) with a signed cookie
-- Middleware guard on protected routes via Leptos server-side rendering context
+- Sessions stored in PostgreSQL (`sessions` table); cookie name `egit_session`, 30-day expiry, HttpOnly + SameSite=Lax
+- Session cookie is set/cleared via `leptos_axum::ResponseOptions::insert_header` inside server functions
+- Reading request cookies in server functions: use `leptos_axum::extract::<axum::http::HeaderMap>().await` — **not** `expect_context::<RequestParts>()` (not available in leptos_axum 0.8)
+- `ServerAction` generics use the PascalCase struct name emitted by `#[server]`, e.g. `ServerAction::<LoginUser>::new()` — not the snake_case fn name
+- Auth-aware navbar uses a `Resource` to call `GetCurrentUser` on load and re-fetches after logout
 
 ### Theming
 - Six CSS variable-based themes (same pattern as portfolio project)
 - Theme preference stored per-user in DB
 - Applied as `data-theme="..."` on `<html>` element via SSR
 - User can change theme from profile settings
+
+### Tailwind CSS + custom tokens
+- All component classes live inside `@layer components {}` in `style/input.css`
+- CSS variable–based colors are set as plain CSS (`color: var(--color-accent)`) — **never** via `@apply` with token names like `text-text-primary` or `bg-bg-secondary`; Tailwind doesn't know those exist and will error
+- `@apply` is only used for real Tailwind utilities (`flex`, `rounded-lg`, `text-sm`, etc.)
+- Alert/overlay tints use `color-mix(in srgb, var(--color-danger) 10%, transparent)` instead of Tailwind opacity modifiers (`bg-danger/10`), which require a registered color
+- Rust `class=` attributes use the component class names defined in `@layer components` (e.g. `text-accent`, `text-muted`, `bg-surface`, `bg-surface-secondary`) — not raw token names
 
 ### HTTPS Git protocol
 Implement Git smart HTTP (`/info/refs`, `/git-upload-pack`, `/git-receive-pack`) as Axum routes alongside Leptos. Authenticate push via HTTP Basic Auth checked against the users table.
@@ -227,9 +237,9 @@ LEPTOS_SITE_ROOT=site
 
 ## Implementation Order (suggested)
 
-1. **Project scaffold** — Cargo.toml, Leptos app shell, Tailwind, Docker/PostgreSQL setup
-2. **DB + migrations** — sqlx pool, run migrations on startup
-3. **Auth** — register, login, logout, session middleware
+1. ✅ **Project scaffold** — Cargo.toml, Leptos app shell, Tailwind, Docker/PostgreSQL setup
+2. ✅ **DB + migrations** — sqlx pool, run migrations on startup
+3. ✅ **Auth** — register, login, logout, session middleware; auth-aware navbar; `egit_stage_3.zip`
 4. **Theme system** — CSS variables, per-user theme, `data-theme` SSR
 5. **Repo creation** — form, `gix::init_bare`, insert DB row
 6. **HTTPS Git push** — Axum smart HTTP routes, Basic Auth
