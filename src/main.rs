@@ -37,7 +37,6 @@ async fn main() {
     let pool_for_context = pool.clone();
     let repo_path_for_context = repo_base_path.clone();
 
-    // Derive the pkg path from leptos config so it stays in sync with Cargo.toml
     let site_root = leptos_options.site_root.to_string();
     let pkg_path = format!("{}/pkg", site_root);
 

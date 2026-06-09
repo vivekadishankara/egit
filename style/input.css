@@ -224,3 +224,68 @@ body {
     .bg-secondary { background-color: var(--color-bg-secondary); }
     .border-border { border-color: var(--color-border); }
 }
+
+/* ── Auth pages ─────────────────────────────────────────────────────── */
+
+.auth-container {
+    @apply flex items-center justify-center min-h-[calc(100vh-4rem)] px-4 py-12;
+}
+
+.auth-card {
+    @apply w-full max-w-md bg-bg-secondary border border-border rounded-xl p-8 shadow-lg;
+}
+
+.auth-title {
+    @apply text-2xl font-bold text-text-primary mb-6 text-center;
+}
+
+.auth-footer {
+    @apply mt-6 text-center text-sm text-text-muted;
+}
+
+.auth-link {
+    @apply text-accent hover:text-accent-hover underline;
+}
+
+/* ── Forms ──────────────────────────────────────────────────────────── */
+
+.form-group {
+    @apply mb-4;
+}
+
+.form-label {
+    @apply block text-sm font-medium text-text-primary mb-1.5;
+}
+
+.form-input {
+    @apply w-full px-3 py-2 bg-bg-tertiary border border-border rounded-lg
+           text-text-primary placeholder-text-muted
+           focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent
+           transition-colors;
+}
+
+.form-hint {
+    @apply mt-1 text-xs text-text-muted;
+}
+
+/* ── Alerts ─────────────────────────────────────────────────────────── */
+
+.alert-error {
+    @apply mb-4 px-4 py-3 bg-danger/10 border border-danger/30 rounded-lg
+           text-sm text-danger;
+}
+
+.alert-success {
+    @apply mb-4 px-4 py-3 bg-success/10 border border-success/30 rounded-lg
+           text-sm text-success;
+}
+
+/* ── Navbar user section ────────────────────────────────────────────── */
+
+.navbar-user {
+    @apply flex items-center gap-3;
+}
+
+.navbar-link-placeholder {
+    @apply w-20 h-4 bg-bg-tertiary rounded animate-pulse;
+}
