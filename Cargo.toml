@@ -67,6 +67,7 @@ http = "1"
 
 # WASM
 wasm-bindgen = { version = "=0.2.100", optional = true }
+web-sys = { version = "0.3", optional = true, features = ["Window", "Document", "HtmlElement", "DomStringMap", "HtmlSelectElement", "HtmlFormElement"] }
 console_error_panic_hook = { version = "0.1", optional = true }
 
 [features]
@@ -74,6 +75,7 @@ default = []
 hydrate = [
     "leptos/hydrate",
     "dep:wasm-bindgen",
+    "dep:web-sys",
     "dep:console_error_panic_hook",
 ]
 ssr = [

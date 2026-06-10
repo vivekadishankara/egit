@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 
+use crate::components::theme_switcher::ThemeSwitcher;
 use crate::pages::auth::{get_current_user, LogoutUser};
 
 #[component]
@@ -31,6 +32,7 @@ pub fn Navbar() -> impl IntoView {
                                 match result {
                                     Ok(Some(user)) => view! {
                                         <div class="navbar-user">
+                                            <ThemeSwitcher current_theme=user.theme.clone()/>
                                             <a
                                                 href=format!("/{}", user.username)
                                                 class="navbar-link font-medium"

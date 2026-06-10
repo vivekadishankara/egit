@@ -173,3 +173,46 @@ pub struct CurrentUser {
     pub username: String,
     pub theme: String,
 }
+
+/// The six supported themes (kept in sync with input.css `[data-theme=...]` blocks).
+pub const THEMES: &[(&str, &str)] = &[
+    ("dark",      "Dark"),
+    ("light",     "Light"),
+    ("dracula",   "Dracula"),
+    ("nord",      "Nord"),
+    ("solarized", "Solarized"),
+    ("gruvbox",   "Gruvbox"),
+];
+
+/// Server function: persist a new theme for the current user.
+#[server(SetTheme, "/api")]
+pub async fn set_theme(theme: String) -> Result<(), ServerFnError> {
+    use crate::auth;
+    use axum::http::HeaderMap;
+    use sqlx::PgPool;
+
+    // Validate the theme name before touching the DB.
+    if !THEMES.iter().any(|(id, _)| *id == theme) {
+        return Err(ServerFnError::new("Unknown theme"));
+    }
+
+    let pool = expect_context::<PgPool>();
+    let headers: HeaderMap = leptos_axum::extract()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+    let session_id = auth::session_id_from_headers(&headers);
+    let session = auth::get_session(&pool, session_id.as_deref())
+        .await
+        .ok_or_else(|| ServerFnError::new("Not logged in"))?;
+
+    sqlx::query!(
+        "UPDATE users SET theme = $1 WHERE id = $2",
+        theme,
+        session.user_id
+    )
+    .execute(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("DB error: {e}")))?;
+
+    Ok(())
+}

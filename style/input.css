@@ -284,6 +284,35 @@ body {
         @apply prose max-w-none;
     }
 
+    /* Theme switcher */
+    .theme-switcher-wrapper {
+        @apply flex items-center;
+    }
+    .theme-switcher-wrapper form {
+        @apply flex items-center gap-1;
+    }
+    .theme-select {
+        background-color: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border);
+        color: var(--color-text-muted);
+        @apply text-xs px-2 py-1 rounded-md cursor-pointer outline-none transition-colors;
+    }
+    .theme-select:focus,
+    .theme-select:hover {
+        border-color: var(--color-accent);
+        color: var(--color-text);
+    }
+    .theme-submit-btn {
+        background-color: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border);
+        color: var(--color-text-muted);
+        @apply p-1.5 rounded-md cursor-pointer transition-colors flex items-center justify-center;
+    }
+    .theme-submit-btn:hover {
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+    }
+
     /* CSS-var color utilities (used in Leptos class= attributes) */
     .text-accent        { color: var(--color-accent); }
     .text-muted         { color: var(--color-text-muted); }
