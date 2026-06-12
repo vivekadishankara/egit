@@ -8,49 +8,50 @@ pub fn init_bare(path: &Path) -> anyhow::Result<()> {
     std::fs::create_dir_all(path.parent().unwrap_or(path))?;
     gix::init_bare(path)?;
 
-    let head = path.join("HEAD");
-    std::fs::write(&head, b"ref: refs/heads/main\n")?;
+    // Explicitly set HEAD to refs/heads/main.
+    std::fs::write(path.join("HEAD"), b"ref: refs/heads/main\n")?;
 
-    // Create an initial empty commit so the default branch (main) exists
-    // and git-upload-pack advertises the symref capability on clone.
+    // Create an initial empty commit so refs/heads/main exists as a valid ref.
+    // Without it, git-upload-pack can't advertise a symref target, and the
+    // client falls back to init.defaultBranch (typically "master").
     let empty_tree = Command::new("git")
         .args(["hash-object", "-t", "tree", "--stdin", "-w"])
         .env("GIT_DIR", path)
         .stdin(std::process::Stdio::null())
         .output()
-        .map_err(|e| anyhow::anyhow!("git hash-object failed: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("git hash-object: {e}"))?;
 
     if !empty_tree.status.success() {
         let stderr = String::from_utf8_lossy(&empty_tree.stderr);
-        anyhow::bail!("Empty tree creation failed: {stderr}");
+        anyhow::bail!("empty tree creation failed: {stderr}");
     }
 
-    let empty_tree_hash = std::str::from_utf8(&empty_tree.stdout)
-        .map_err(|_| anyhow::anyhow!("bad utf-8 from git hash-object"))?
+    let empty_oid = std::str::from_utf8(&empty_tree.stdout)
+        .map_err(|_| anyhow::anyhow!("bad utf-8"))?
         .trim()
         .to_string();
 
     let output = Command::new("git")
-        .args(["commit-tree", "-m", "Initial commit", &empty_tree_hash])
+        .args(["commit-tree", "-m", "Initial commit", &empty_oid])
         .env("GIT_DIR", path)
         .output()
-        .map_err(|e| anyhow::anyhow!("git commit-tree failed: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("git commit-tree: {e}"))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        anyhow::bail!("Initial commit failed: {stderr}");
+        anyhow::bail!("initial commit failed: {stderr}");
     }
 
-    let oid = std::str::from_utf8(&output.stdout)
-        .map_err(|_| anyhow::anyhow!("bad utf-8 from git commit-tree"))?
+    let commit_oid = std::str::from_utf8(&output.stdout)
+        .map_err(|_| anyhow::anyhow!("bad utf-8"))?
         .trim()
         .to_string();
 
     Command::new("git")
-        .args(["update-ref", "refs/heads/main", &oid])
+        .args(["update-ref", "refs/heads/main", &commit_oid])
         .env("GIT_DIR", path)
         .output()
-        .map_err(|e| anyhow::anyhow!("git update-ref failed: {e}"))?;
+        .map_err(|e| anyhow::anyhow!("git update-ref: {e}"))?;
 
     tracing::info!("Initialized bare repo at {:?}", path);
     Ok(())

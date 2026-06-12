@@ -119,6 +119,42 @@ pub async fn handle_info_refs(
     response.extend_from_slice(b"0000");
     response.extend_from_slice(&output);
 
+    // Inject symref=HEAD:refs/heads/main when git-upload-pack doesn't advertise it
+    // (empty repo with unborn HEAD).
+    if !response.windows(12).any(|w| w == b"symref=HEAD:") {
+        let needle = b"capabilities^{}";
+        if let Some(cap_pos) = response.windows(needle.len()).position(|w| w == needle) {
+            // Find the \n that ends the null-OID pkt-line (it's after cap_pos)
+            let tail = &response[cap_pos..];
+            if let Some(eol_rel) = tail.iter().position(|&b| b == b'\n') {
+                let eol = cap_pos + eol_rel;
+                let symref = b" symref=HEAD:refs/heads/main";
+
+                // Rebuild this pkt-line with the symref injected
+                // The pkt-line starts 4 bytes (len) + 41 (null-oid + space) before cap_pos
+                if cap_pos >= 45 {
+                    let line_start = cap_pos - 45;
+                    let old_len_str = std::str::from_utf8(&response[line_start..line_start + 4])
+                        .unwrap_or("0000");
+                    let old_len = u16::from_str_radix(old_len_str, 16).unwrap_or(0) as usize;
+                    let new_len = old_len + symref.len();
+                    let new_len_str = format!("{:04x}", new_len);
+
+                    // Slice out the old pkt-line and replace with a new one
+                    let old_line = &response[line_start..eol + 1]; // include the \n
+                    let mut new_line = Vec::with_capacity(new_len + 4 + symref.len());
+                    new_line.extend_from_slice(new_len_str.as_bytes());
+                    // everything between the 4-byte len and the \n, with symref before \n
+                    new_line.extend_from_slice(&old_line[4..old_line.len() - 1]); // exclude len prefix and \n
+                    new_line.extend_from_slice(symref);
+                    new_line.push(b'\n');
+
+                    response.splice(line_start..eol + 1, new_line);
+                }
+            }
+        }
+    }
+
     (git_headers(content_type), response).into_response()
 }
 
