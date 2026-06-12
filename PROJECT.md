@@ -23,13 +23,13 @@ A self-hosted Git forge built entirely in Rust, inspired by GitHub. Full-stack L
 
 ### In scope
 - [x] User auth (register, login, logout, session management)
-- [ ] User profiles (avatar, bio, list of repos)
+- [x] User profiles (avatar, bio, list of repos)
 - [ ] Repository creation, deletion, basic settings
 - [x] Repository browser (file tree, file viewer with syntax highlight)
 - [x] README rendering (Markdown → HTML)
-- [ ] Commit history (list, individual commit diff)
+- [x] Commit history (list, individual commit diff)
 - [ ] Pull requests (open, view diff, merge, close)
-- [ ] Full theme system (CSS variable themes stored in DB, `data-theme` on `<html>`)
+- [x] Full theme system (CSS variable themes stored in DB, `data-theme` on `<html>`)
 
 ### Explicitly out of scope for v1
 - Issues / labels / milestones
@@ -56,6 +56,9 @@ Metadata (description, visibility, default branch, etc.) stored in PostgreSQL.
 
 ### Git operations via `gix`
 Use the `gix` crate (gitoxide) for all read operations: file tree traversal, blob reading, commit log, diff generation. For write operations (init, receive-pack for HTTPS push), use `gix` where stable, fall back to `git2` if needed.
+
+### Default branch resolution
+The `default_branch` column in `repositories` stores the initial value at creation time, but the actual branch name is resolved from the git repo at display time via `git::get_default_branch()`. This avoids stale links when a repo's HEAD points to a different branch (e.g. `master` vs `main`). Both the repo overview page and the profile page repo list use this runtime resolution.
 
 ### Auth
 - Passwords hashed with `bcrypt`
@@ -245,9 +248,9 @@ LEPTOS_SITE_ROOT=site
 6. ✅ **HTTPS Git push** — Axum smart HTTP routes, Basic Auth
 7. ✅ **Repo browser** — file tree via `gix`, blob viewer, syntax highlight
 8. ✅ **README rendering** — detect README.md, render via pulldown-cmark
-9. **Commit log + diff** — commit history page, single commit diff view
+9. ✅ **Commit log + diff** — commit history page, single commit diff view
 10. **Pull requests** — create, list, diff between branches, merge, close
-11. **User profiles** — avatar, bio, repo list
+11. ✅ **User profiles** — avatar, bio, repo list
 12. **Polish** — themes, responsive layout, empty states, error pages
 
 ---
