@@ -147,28 +147,34 @@ pub fn CommitsPage() -> impl IntoView {
                                                 Ok(list) => {
                                                     view! {
                                                         <div class="card">
-                                                            {list.into_iter().map(|entry| {
-                                                                let sid = entry.short_id.clone();
-                                                                let aname = entry.author_name.clone();
-                                                                let msg = entry.message.clone();
-                                                                let ts = entry.timestamp;
-                                                                view! {
-                                                                    <div class="flex items-center justify-between py-3 px-4 border-b border-theme last:border-b-0 hover:bg-surface-secondary">
-                                                                        <div class="flex-1 min-w-0">
-                                                                            <div class="text-sm font-medium text-text truncate">
-                                                                                {msg}
-                                                                            </div>
-                                                                            <div class="text-xs text-muted mt-1">
-                                                                                <span class="font-mono">{sid}</span>
-                                                                                " by "
-                                                                                <span>{aname}</span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="text-xs text-muted whitespace-nowrap ml-4">
-                                                                            {format_timestamp(ts)}
-                                                                        </div>
-                                                                    </div>
-                                                                }
+                                                    {list.into_iter().map(|entry| {
+                                                                 let sid = entry.short_id.clone();
+                                                                 let id = entry.id.clone();
+                                                                 let aname = entry.author_name.clone();
+                                                                 let uname = username();
+                                                                 let rname = reponame();
+                                                                 let msg = entry.message.clone();
+                                                                 let ts = entry.timestamp;
+                                                                 view! {
+                                                                     <a
+                                                                         href=format!("/{uname}/{rname}/commit/{id}")
+                                                                         class="flex items-center justify-between py-3 px-4 border-b border-theme last:border-b-0 hover:bg-surface-secondary no-underline"
+                                                                     >
+                                                                         <div class="flex-1 min-w-0">
+                                                                             <div class="text-sm font-medium text-text truncate">
+                                                                                 {msg}
+                                                                             </div>
+                                                                             <div class="text-xs text-muted mt-1">
+                                                                                 <span class="font-mono">{sid}</span>
+                                                                                 " by "
+                                                                                 <span>{aname}</span>
+                                                                             </div>
+                                                                         </div>
+                                                                         <div class="text-xs text-muted whitespace-nowrap ml-4">
+                                                                             {format_timestamp(ts)}
+                                                                         </div>
+                                                                     </a>
+                                                                 }
                                                             }).collect::<Vec<_>>()}
                                                         </div>
                                                     }.into_any()

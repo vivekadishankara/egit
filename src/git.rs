@@ -300,6 +300,91 @@ pub fn has_commits(repo_base: &str, username: &str, reponame: &str) -> bool {
     false
 }
 
+/// Full detail for a single commit including its diff.
+pub struct CommitDetail {
+    pub id: String,
+    pub short_id: String,
+    pub author_name: String,
+    pub author_email: String,
+    pub message: String,
+    pub message_body: String,
+    pub timestamp: i64,
+    pub diff: String,
+    pub files_changed: usize,
+    pub insertions: usize,
+    pub deletions: usize,
+}
+
+/// Get the full detail and diff for a single commit.
+pub fn get_commit_detail(
+    repo_base: &str,
+    username: &str,
+    reponame: &str,
+    commit_id: &str,
+) -> anyhow::Result<CommitDetail> {
+    let path = repo_path(repo_base, username, reponame);
+    let repo = gix::open(&path)?;
+    let oid: gix::hash::ObjectId = commit_id.parse()?;
+
+    let walk = repo.rev_walk([oid]).all()?;
+    let entry = walk
+        .into_iter()
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("Commit not found"))??;
+
+    let commit_obj = entry.object()?;
+    let msg = commit_obj.message_raw_sloppy().to_string();
+    let author = commit_obj.author()?;
+    let time = commit_obj.time()?;
+    let hex = entry.id.to_string();
+
+    let (first_line, body) = match msg.split_once('\n') {
+        Some((f, b)) => (f.to_string(), b.trim().to_string()),
+        None => (msg.clone(), String::new()),
+    };
+
+    let diff = get_commit_diff_internal(&path, &hex)?;
+
+    let files_changed = diff.lines().filter(|l| l.starts_with("diff --git")).count();
+    let insertions = diff
+        .lines()
+        .filter(|l| l.starts_with('+') && !l.starts_with("+++"))
+        .count();
+    let deletions = diff
+        .lines()
+        .filter(|l| l.starts_with('-') && !l.starts_with("---"))
+        .count();
+
+    Ok(CommitDetail {
+        id: hex.clone(),
+        short_id: hex[..7].to_string(),
+        author_name: author.name.to_string(),
+        author_email: author.email.to_string(),
+        message: first_line,
+        message_body: body,
+        timestamp: time.seconds,
+        diff,
+        files_changed,
+        insertions,
+        deletions,
+    })
+}
+
+/// Internal helper: get the raw diff for a commit via `git show`.
+fn get_commit_diff_internal(git_dir: &std::path::Path, oid: &str) -> anyhow::Result<String> {
+    let output = std::process::Command::new("git")
+        .args(["show", oid, "--format="])
+        .env("GIT_DIR", git_dir)
+        .output()?;
+    if !output.status.success() {
+        anyhow::bail!(
+            "git show failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
 /// Information about a single commit in the log.
 pub struct CommitInfo {
     pub id: String,
