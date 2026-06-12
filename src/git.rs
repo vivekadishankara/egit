@@ -210,6 +210,7 @@ pub fn read_readme(
     repo_base: &str,
     username: &str,
     reponame: &str,
+    branch: Option<&str>,
 ) -> anyhow::Result<Option<String>> {
     let path = repo_path(repo_base, username, reponame);
     let repo = match gix::open(&path) {
@@ -217,7 +218,8 @@ pub fn read_readme(
         Err(_) => return Ok(None),
     };
 
-    let commit = match resolve_commit(&repo, "HEAD") {
+    let revision = branch.unwrap_or("HEAD");
+    let commit = match resolve_commit(&repo, revision) {
         Ok(c) => c,
         Err(_) => return Ok(None),
     };
@@ -393,6 +395,25 @@ pub struct CommitInfo {
     pub author_email: String,
     pub message: String,
     pub timestamp: i64,
+}
+
+/// List all branches in a repository.
+pub fn list_branches(repo_base: &str, username: &str, reponame: &str) -> Vec<String> {
+    let path = repo_path(repo_base, username, reponame);
+    let Ok(repo) = gix::open(&path) else {
+        return Vec::new();
+    };
+    let Ok(platform) = repo.references() else {
+        return Vec::new();
+    };
+    let Ok(iter) = platform.local_branches() else {
+        return Vec::new();
+    };
+    iter.filter_map(|r| {
+        let r = r.ok()?;
+        Some(r.name().shorten().to_string())
+    })
+    .collect()
 }
 
 /// Get the commit log for a repository's branch.

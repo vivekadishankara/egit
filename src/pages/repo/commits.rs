@@ -3,6 +3,7 @@ use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
 
 use super::overview::get_repo_overview;
+use crate::components::repo_tab_bar::{BranchSelector, RepoTabBar};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommitLogEntry {
@@ -82,7 +83,7 @@ pub fn CommitsPage() -> impl IntoView {
 
     let repo = Resource::new(
         move || (username(), reponame()),
-        |(u, r)| async move { get_repo_overview(u, r).await },
+        |(u, r)| async move { get_repo_overview(u, r, None).await },
     );
 
     let commits = Resource::new(
@@ -101,6 +102,7 @@ pub fn CommitsPage() -> impl IntoView {
                             let desc = info.description.clone();
                             let is_private = info.is_private;
                             let default_branch = info.default_branch.clone();
+                            let has_commits = info.has_commits;
 
                             view! {
                                 <div>
@@ -123,23 +125,24 @@ pub fn CommitsPage() -> impl IntoView {
                                         view! { <p class="text-muted mb-4">{d.clone()}</p> }
                                     })}
 
-                                    <div class="flex gap-1 border-b border-theme mb-6">
-                                        <a
-                                            href=format!("/{owner}/{name}")
-                                            class="px-4 py-2 text-sm text-muted no-underline border-b-2 border-transparent hover:text-text hover:border-text"
-                                        >
-                                            "Overview"
-                                        </a>
-                                        <a
-                                            href=format!("/{owner}/{name}/tree/{default_branch}")
-                                            class="px-4 py-2 text-sm text-muted no-underline border-b-2 border-transparent hover:text-text hover:border-text"
-                                        >
-                                            "Code"
-                                        </a>
-                                        <span class="px-4 py-2 text-sm font-medium border-b-2 border-accent text-accent">
-                                            "Commits"
-                                        </span>
-                                    </div>
+                                    {has_commits.then(|| {
+                                        view! {
+                                            <BranchSelector
+                                                owner={owner.clone()}
+                                                name={name.clone()}
+                                                current_branch={branch()}
+                                                redirect_to="/commits/"
+                                            />
+                                        }
+                                    })}
+
+                                    <RepoTabBar
+                                        active="commits"
+                                        owner={owner.clone()}
+                                        name={name.clone()}
+                                        default_branch={default_branch.clone()}
+                                        has_commits={has_commits}
+                                    />
 
                                     <Suspense fallback=|| view! { <p class="text-muted">"Loading commits..."</p> }>
                                         {move || {

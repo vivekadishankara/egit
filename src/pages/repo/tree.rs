@@ -3,6 +3,7 @@ use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
 
 use crate::components::file_tree::{FileTree, TreeEntry};
+use crate::components::repo_tab_bar::{BranchSelector, RepoTabBar, get_repo_tab_meta};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EntryDto {
@@ -64,6 +65,11 @@ pub fn TreePage() -> impl IntoView {
         |(u, r, b, p)| async move { get_tree_entries(u, r, b, p).await },
     );
 
+    let repo_meta = Resource::new(
+        move || (username(), reponame()),
+        |(u, r)| async move { get_repo_tab_meta(u, r).await },
+    );
+
     let crumbs = move || {
         let p = path();
         let u = username();
@@ -115,34 +121,62 @@ pub fn TreePage() -> impl IntoView {
                 </a>
             </h1>
 
-            <div class="flex items-center gap-1 text-sm text-muted mb-4 flex-wrap">
-                <a
-                    href=format!("/{}/{}", username(), reponame())
-                    class="text-accent hover:underline no-underline"
-                >
-                    {reponame()}
-                </a>
-                <span>" / "</span>
-                <a
-                    href=format!("/{}/{}/tree/{}", username(), reponame(), branch())
-                    class="text-accent hover:underline no-underline"
-                >
-                    {branch()}
-                </a>
+            <Suspense fallback=|| view! { <p class="text-muted">"Loading..."</p> }>
                 {move || {
-                    crumbs()
-                        .into_iter()
-                        .map(|(name, href)| {
+                    repo_meta.get().map(|result| match result {
+                        Ok(meta) => {
                             view! {
-                                <span>" / "</span>
-                                <a href=href class="text-accent hover:underline no-underline">
-                                    {name}
-                                </a>
-                            }
-                        })
-                        .collect::<Vec<_>>()
+                                <>
+                                    <BranchSelector
+                                        owner={username()}
+                                        name={reponame()}
+                                        current_branch={branch()}
+                                        redirect_to="/tree/"
+                                    />
+                                    <RepoTabBar
+                                        active="code"
+                                        owner={username()}
+                                        name={reponame()}
+                                        default_branch={meta.default_branch}
+                                        has_commits={meta.has_commits}
+                                    />
+                                    <div class="flex items-center gap-1 text-sm text-muted mb-4 flex-wrap">
+                                        <a
+                                            href=format!("/{}/{}", username(), reponame())
+                                            class="text-accent hover:underline no-underline"
+                                        >
+                                            {reponame()}
+                                        </a>
+                                        <span>" / "</span>
+                                        <a
+                                            href=format!("/{}/{}/tree/{}", username(), reponame(), branch())
+                                            class="text-accent hover:underline no-underline"
+                                        >
+                                            {branch()}
+                                        </a>
+                                        {move || {
+                                            crumbs()
+                                                .into_iter()
+                                                .map(|(name, href)| {
+                                                    view! {
+                                                        <span>" / "</span>
+                                                        <a href=href class="text-accent hover:underline no-underline">
+                                                            {name}
+                                                        </a>
+                                                    }
+                                                })
+                                                .collect::<Vec<_>>()
+                                        }}
+                                    </div>
+                                </>
+                            }.into_any()
+                        }
+                        Err(e) => {
+                            view! { <div class="alert-error">{e.to_string()}</div> }.into_any()
+                        }
+                    })
                 }}
-            </div>
+            </Suspense>
 
             <Suspense fallback=|| view! { <p class="text-muted">"Loading..."</p> }>
                 {move || {

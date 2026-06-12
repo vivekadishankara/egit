@@ -1,8 +1,9 @@
 use leptos::prelude::*;
-use leptos_router::hooks::use_params_map;
+use leptos_router::hooks::{use_params_map, use_query_map};
 use serde::{Deserialize, Serialize};
 
 use crate::components::markdown::Markdown;
+use crate::components::repo_tab_bar::{BranchSelector, RepoTabBar};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoInfo {
@@ -19,6 +20,7 @@ pub struct RepoInfo {
 pub async fn get_repo_overview(
     username: String,
     reponame: String,
+    branch: Option<String>,
 ) -> Result<RepoInfo, ServerFnError> {
     use sqlx::PgPool;
 
@@ -40,7 +42,7 @@ pub async fn get_repo_overview(
     .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?
     .ok_or_else(|| ServerFnError::new("Repository not found"))?;
 
-    let readme_content = crate::git::read_readme(&repo_base, &username, &reponame)
+    let readme_content = crate::git::read_readme(&repo_base, &username, &reponame, branch.as_deref())
         .ok()
         .flatten();
 
@@ -62,6 +64,7 @@ pub async fn get_repo_overview(
 #[component]
 pub fn RepoOverviewPage() -> impl IntoView {
     let params = use_params_map();
+    let query = use_query_map();
 
     let username = move || {
         params
@@ -77,10 +80,13 @@ pub fn RepoOverviewPage() -> impl IntoView {
             .map(|s| s.to_string())
             .unwrap_or_default()
     };
+    let branch = move || {
+        query.get().get("branch").map(|s| s.to_string())
+    };
 
     let repo = Resource::new(
-        move || (username(), reponame()),
-        |(u, r)| async move { get_repo_overview(u, r).await },
+        move || (username(), reponame(), branch()),
+        |(u, r, b)| async move { get_repo_overview(u, r, b).await },
     );
 
     view! {
@@ -118,31 +124,24 @@ pub fn RepoOverviewPage() -> impl IntoView {
                                         view! { <p class="text-muted mb-4">{d.clone()}</p> }
                                     })}
 
-                                    <div class="flex gap-1 border-b border-theme mb-6">
-                                        <span class="px-4 py-2 text-sm font-medium border-b-2 border-accent text-accent">
-                                            "Overview"
-                                        </span>
-                                        {if has_commits {
-                                            view! {
-                                                <>
-                                                    <a
-                                                        href=format!("/{owner}/{name}/tree/{}", default_branch)
-                                                        class="px-4 py-2 text-sm text-muted no-underline border-b-2 border-transparent hover:text-text hover:border-text"
-                                                    >
-                                                        "Code"
-                                                    </a>
-                                                    <a
-                                                        href=format!("/{owner}/{name}/commits/{default_branch}")
-                                                        class="px-4 py-2 text-sm text-muted no-underline border-b-2 border-transparent hover:text-text hover:border-text"
-                                                    >
-                                                        "Commits"
-                                                    </a>
-                                                </>
-                                            }.into_any()
-                                        } else {
-                                            view! { <span></span> }.into_any()
-                                        }}
-                                    </div>
+                                    {has_commits.then(|| {
+                                        view! {
+                                            <BranchSelector
+                                                owner={owner.clone()}
+                                                name={name.clone()}
+                                                current_branch={branch().unwrap_or_else(|| default_branch.clone())}
+                                                redirect_to="?branch="
+                                            />
+                                        }
+                                    })}
+
+                                    <RepoTabBar
+                                        active="overview"
+                                        owner={owner.clone()}
+                                        name={name.clone()}
+                                        default_branch={default_branch.clone()}
+                                        has_commits={has_commits}
+                                    />
 
                                     {match &readme {
                                         Some(content) => {
