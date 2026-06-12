@@ -240,7 +240,7 @@ LEPTOS_SITE_ROOT=site
 1. ✅ **Project scaffold** — Cargo.toml, Leptos app shell, Tailwind, Docker/PostgreSQL setup
 2. ✅ **DB + migrations** — sqlx pool, run migrations on startup
 3. ✅ **Auth** — register, login, logout, session middleware; auth-aware navbar; `egit_stage_3.zip`
-4. **Theme system** — CSS variables, per-user theme, `data-theme` SSR
+4. ✅ **Theme system** — CSS variables, per-user theme, `data-theme` SSR
 5. **Repo creation** — form, `gix::init_bare`, insert DB row
 6. **HTTPS Git push** — Axum smart HTTP routes, Basic Auth
 7. **Repo browser** — file tree via `gix`, blob viewer, syntax highlight

@@ -12,6 +12,7 @@ use crate::pages::{
     repo::{
         blob::BlobPage,
         commits::CommitsPage,
+        create::CreateRepoPage,
         overview::RepoOverviewPage,
         pulls::{detail::PullDetailPage, list::PullListPage, new::NewPullPage},
         tree::TreePage,
@@ -37,6 +38,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/") view=HomePage/>
                     <Route path=path!("/login") view=LoginPage/>
                     <Route path=path!("/register") view=RegisterPage/>
+                    <Route path=path!("/repos/new") view=CreateRepoPage/>
                     <Route path=path!("/:username") view=ProfilePage/>
                     <Route path=path!("/:username/:reponame") view=RepoOverviewPage/>
                     <Route path=path!("/:username/:reponame/tree/:branch") view=TreePage/>

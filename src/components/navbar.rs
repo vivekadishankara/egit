@@ -34,6 +34,13 @@ pub fn Navbar() -> impl IntoView {
                                         <div class="navbar-user">
                                             <ThemeSwitcher current_theme=user.theme.clone()/>
                                             <a
+                                                href="/repos/new"
+                                                class="btn-primary text-sm"
+                                                title="Create a new repository"
+                                            >
+                                                "+ New"
+                                            </a>
+                                            <a
                                                 href=format!("/{}", user.username)
                                                 class="navbar-link font-medium"
                                             >
