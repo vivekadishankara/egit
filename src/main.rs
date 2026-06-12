@@ -1,4 +1,4 @@
-use axum::{extract::Request, middleware, response::IntoResponse, Router};
+use axum::{extract::Request, middleware, response::IntoResponse, Extension, Router};
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, LeptosRoutes};
 use tower::ServiceBuilder;
@@ -6,7 +6,7 @@ use tower_http::compression::CompressionLayer;
 use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use egit::{app::App, auth, db};
+use egit::{app::App, auth, db, git_routes::GitSmartHttpState};
 
 /// Injected into Axum request extensions by `theme_middleware`.
 /// The Leptos shell reads it to set `data-theme` during SSR.
@@ -40,6 +40,11 @@ async fn main() {
     let repo_base_path = std::env::var("REPO_BASE_PATH")
         .unwrap_or_else(|_| "./data/repos".into());
 
+    // Ensure the repo storage directory exists.
+    if let Err(e) = std::fs::create_dir_all(&repo_base_path) {
+        tracing::error!("Failed to create repo base directory {}: {}", repo_base_path, e);
+    }
+
     let site_root = leptos_options.site_root.to_string();
     let pkg_path = format!("{}/pkg", site_root);
 
@@ -49,8 +54,27 @@ async fn main() {
     let pool_shell = pool.clone();
     let pool_mw = pool.clone();
 
+    // State for Git smart HTTP handlers.
+    let git_state = GitSmartHttpState {
+        pool: pool.clone(),
+        repo_base_path: repo_base_path.clone(),
+    };
+
     let app = Router::new()
         .nest_service("/pkg", ServeDir::new(pkg_path))
+        .layer(Extension(git_state))
+        .route(
+            "/{username}/{reponame}/info/refs",
+            axum::routing::get(egit::git_routes::handle_info_refs),
+        )
+        .route(
+            "/{username}/{reponame}/git-upload-pack",
+            axum::routing::post(egit::git_routes::handle_upload_pack),
+        )
+        .route(
+            "/{username}/{reponame}/git-receive-pack",
+            axum::routing::post(egit::git_routes::handle_receive_pack),
+        )
         .leptos_routes_with_context(
             &leptos_options,
             routes,

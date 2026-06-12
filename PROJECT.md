@@ -241,8 +241,8 @@ LEPTOS_SITE_ROOT=site
 2. ✅ **DB + migrations** — sqlx pool, run migrations on startup
 3. ✅ **Auth** — register, login, logout, session middleware; auth-aware navbar; `egit_stage_3.zip`
 4. ✅ **Theme system** — CSS variables, per-user theme, `data-theme` SSR
-5. **Repo creation** — form, `gix::init_bare`, insert DB row
-6. **HTTPS Git push** — Axum smart HTTP routes, Basic Auth
+5. ✅ **Repo creation** — form, `gix::init_bare`, insert DB row
+6. ✅ **HTTPS Git push** — Axum smart HTTP routes, Basic Auth
 7. **Repo browser** — file tree via `gix`, blob viewer, syntax highlight
 8. **README rendering** — detect README.md, render via pulldown-cmark
 9. **Commit log + diff** — commit history page, single commit diff view

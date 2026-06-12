@@ -141,10 +141,12 @@ pub fn CreateRepoPage() -> impl IntoView {
 
                     <div class="form-group">
                         <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="hidden" name="is_private" value="false"/>
                             <input
                                 type="checkbox"
                                 id="is_private"
                                 name="is_private"
+                                value="true"
                                 class="rounded border-theme bg-surface-secondary text-accent"
                             />
                             <span class="text-sm">"Private repository"</span>

@@ -10,4 +10,6 @@ pub mod auth;
 #[cfg(feature = "ssr")]
 pub mod git;
 #[cfg(feature = "ssr")]
+pub mod git_routes;
+#[cfg(feature = "ssr")]
 pub mod error;
