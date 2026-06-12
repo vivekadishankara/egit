@@ -13,3 +13,6 @@ pub mod git;
 pub mod git_routes;
 #[cfg(feature = "ssr")]
 pub mod error;
+
+#[cfg(feature = "ssr")]
+pub mod server;
