@@ -4,7 +4,7 @@ use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 
-use crate::components::repo_tab_bar::{BranchSelector, RepoTabBar, get_repo_tab_meta};
+use crate::components::repo_tab_bar::{url_encode_branch, BranchSelector, RepoTabBar, get_repo_tab_meta};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlobData {
@@ -123,24 +123,10 @@ pub fn BlobPage() -> impl IntoView {
         |(u, r)| async move { get_repo_tab_meta(u, r).await },
     );
 
-    let crumbs = move || {
-        let p = path();
-        let mut crumbs = Vec::new();
-        let mut accumulated = String::new();
-        for part in p.split('/') {
-            if !accumulated.is_empty() {
-                accumulated.push('/');
-            }
-            accumulated.push_str(part);
-            crumbs.push(part.to_string());
-        }
-        crumbs
-    };
-
     let tree_url = move || {
         let u = username();
         let r = reponame();
-        let b = branch();
+        let b = url_encode_branch(&branch());
         let p = path();
         match p.rsplit_once('/') {
             Some((parent, _)) => {
@@ -170,6 +156,9 @@ pub fn BlobPage() -> impl IntoView {
                         Ok(meta) => {
                             view! {
                                 <>
+                                    {meta.description.as_ref().map(|d| {
+                                        view! { <p class="text-muted mb-4">{d.clone()}</p> }
+                                    })}
                                     <BranchSelector
                                         owner={username()}
                                         name={reponame()}
@@ -182,23 +171,8 @@ pub fn BlobPage() -> impl IntoView {
                                         name={reponame()}
                                         default_branch={meta.default_branch}
                                         has_commits={meta.has_commits}
+                                        current_branch={branch()}
                                     />
-                                    <div class="flex items-center gap-1 text-sm text-muted mb-4 flex-wrap">
-                                        <a
-                                            href=format!("/{}/{}/tree/{}", username(), reponame(), branch())
-                                            class="text-accent hover:underline no-underline"
-                                        >
-                                            {branch()}
-                                        </a>
-                                        {move || {
-                                            crumbs()
-                                                .into_iter()
-                                                .map(|name| {
-                                                    view! { <span>" / " <span class="text-text">{name}</span></span> }
-                                                })
-                                                .collect::<Vec<_>>()
-                                        }}
-                                    </div>
                                 </>
                             }.into_any()
                         }

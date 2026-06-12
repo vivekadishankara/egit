@@ -141,6 +141,7 @@ pub fn RepoOverviewPage() -> impl IntoView {
                                         name={name.clone()}
                                         default_branch={default_branch.clone()}
                                         has_commits={has_commits}
+                                        current_branch={branch().unwrap_or_default()}
                                     />
 
                                     {match &readme {

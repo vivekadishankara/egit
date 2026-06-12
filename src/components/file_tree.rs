@@ -1,4 +1,5 @@
 use leptos::prelude::*;
+use crate::components::repo_tab_bar::url_encode_branch;
 
 #[derive(Debug, Clone)]
 pub struct TreeEntry {
@@ -28,7 +29,7 @@ pub fn FileTree(
             };
 
             if entry.is_dir {
-                let href = format!("/{username}/{reponame}/tree/{branch}/{path}");
+                let href = format!("/{username}/{reponame}/tree/{}/{path}", url_encode_branch(&branch));
                 view! {
                     <tr class="border-b border-theme hover:bg-surface-secondary">
                         <td class="px-3 py-1.5">
@@ -43,7 +44,7 @@ pub fn FileTree(
                     </tr>
                 }
             } else {
-                let href = format!("/{username}/{reponame}/blob/{branch}/{path}");
+                let href = format!("/{username}/{reponame}/blob/{}/{path}", url_encode_branch(&branch));
                 view! {
                     <tr class="border-b border-theme hover:bg-surface-secondary">
                         <td class="px-3 py-1.5">

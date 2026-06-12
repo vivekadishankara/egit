@@ -3,7 +3,7 @@ use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
 
 use crate::components::file_tree::{FileTree, TreeEntry};
-use crate::components::repo_tab_bar::{BranchSelector, RepoTabBar, get_repo_tab_meta};
+use crate::components::repo_tab_bar::{url_encode_branch, BranchSelector, RepoTabBar, get_repo_tab_meta};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EntryDto {
@@ -70,28 +70,10 @@ pub fn TreePage() -> impl IntoView {
         |(u, r)| async move { get_repo_tab_meta(u, r).await },
     );
 
-    let crumbs = move || {
-        let p = path();
-        let u = username();
-        let r = reponame();
-        let b = branch();
-        let mut crumbs = Vec::new();
-        let mut accumulated = String::new();
-        for part in p.split('/') {
-            if !accumulated.is_empty() {
-                accumulated.push('/');
-            }
-            accumulated.push_str(part);
-            let href = format!("/{u}/{r}/tree/{b}/{accumulated}");
-            crumbs.push((part.to_string(), href));
-        }
-        crumbs
-    };
-
     let parent_url = move || {
         let u = username();
         let r = reponame();
-        let b = branch();
+        let b = url_encode_branch(&branch());
         let p = path();
         if p.is_empty() {
             format!("/{u}/{r}/tree/{b}")
@@ -112,7 +94,7 @@ pub fn TreePage() -> impl IntoView {
         <div class="container">
             <h1 class="page-title">
                 <a
-                    href=format!("/{}/{}/tree/{}", username(), reponame(), branch())
+                    href=format!("/{}/{}/tree/{}", username(), reponame(), url_encode_branch(&branch()))
                     class="no-underline"
                 >
                     <span class="text-accent">{username()}</span>
@@ -127,6 +109,9 @@ pub fn TreePage() -> impl IntoView {
                         Ok(meta) => {
                             view! {
                                 <>
+                                    {meta.description.as_ref().map(|d| {
+                                        view! { <p class="text-muted mb-4">{d.clone()}</p> }
+                                    })}
                                     <BranchSelector
                                         owner={username()}
                                         name={reponame()}
@@ -139,35 +124,8 @@ pub fn TreePage() -> impl IntoView {
                                         name={reponame()}
                                         default_branch={meta.default_branch}
                                         has_commits={meta.has_commits}
+                                        current_branch={branch()}
                                     />
-                                    <div class="flex items-center gap-1 text-sm text-muted mb-4 flex-wrap">
-                                        <a
-                                            href=format!("/{}/{}", username(), reponame())
-                                            class="text-accent hover:underline no-underline"
-                                        >
-                                            {reponame()}
-                                        </a>
-                                        <span>" / "</span>
-                                        <a
-                                            href=format!("/{}/{}/tree/{}", username(), reponame(), branch())
-                                            class="text-accent hover:underline no-underline"
-                                        >
-                                            {branch()}
-                                        </a>
-                                        {move || {
-                                            crumbs()
-                                                .into_iter()
-                                                .map(|(name, href)| {
-                                                    view! {
-                                                        <span>" / "</span>
-                                                        <a href=href class="text-accent hover:underline no-underline">
-                                                            {name}
-                                                        </a>
-                                                    }
-                                                })
-                                                .collect::<Vec<_>>()
-                                        }}
-                                    </div>
                                 </>
                             }.into_any()
                         }

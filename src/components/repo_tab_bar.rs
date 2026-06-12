@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 
-fn url_encode_branch(s: &str) -> String {
+pub fn url_encode_branch(s: &str) -> String {
     let mut result = String::with_capacity(s.len());
     for byte in s.bytes() {
         match byte {
@@ -20,6 +20,7 @@ fn url_encode_branch(s: &str) -> String {
 pub struct RepoTabMeta {
     pub default_branch: String,
     pub has_commits: bool,
+    pub description: Option<String>,
 }
 
 #[server(GetRepoTabMeta, "/api")]
@@ -27,11 +28,25 @@ pub async fn get_repo_tab_meta(
     username: String,
     reponame: String,
 ) -> Result<RepoTabMeta, ServerFnError> {
+    use sqlx::PgPool;
+
+    let pool = expect_context::<PgPool>();
     let repo_base: String = expect_context::<String>();
+
+    let description = sqlx::query_scalar::<_, Option<String>>(
+        "SELECT r.description FROM repositories r JOIN users u ON u.id = r.owner_id WHERE r.name = $1 AND u.username = $2",
+    )
+    .bind(&reponame)
+    .bind(&username)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?
+    .flatten();
+
     let default_branch = crate::git::get_default_branch(&repo_base, &username, &reponame)
         .unwrap_or_else(|| "HEAD".to_string());
     let has_commits = crate::git::has_commits(&repo_base, &username, &reponame);
-    Ok(RepoTabMeta { default_branch, has_commits })
+    Ok(RepoTabMeta { default_branch, has_commits, description })
 }
 
 #[server(GetBranchList, "/api")]
@@ -110,7 +125,15 @@ pub fn RepoTabBar(
     name: String,
     default_branch: String,
     has_commits: bool,
+    current_branch: String,
 ) -> impl IntoView {
+    let branch = if current_branch.is_empty() {
+        default_branch.clone()
+    } else {
+        current_branch.clone()
+    };
+    let encoded_branch = url_encode_branch(&branch);
+
     let tab_class = |tab: &str| {
         if tab == active {
             "px-4 py-2 text-sm font-medium border-b-2 border-accent text-accent"
@@ -129,7 +152,7 @@ pub fn RepoTabBar(
                 }.into_any()
             } else {
                 view! {
-                    <a href=format!("/{owner}/{name}") class={tab_class("overview")}>
+                    <a href=format!("/{owner}/{name}?branch={}", encoded_branch) class={tab_class("overview")}>
                         "Overview"
                     </a>
                 }.into_any()
@@ -144,7 +167,7 @@ pub fn RepoTabBar(
                 } else {
                     view! {
                         <a
-                            href=format!("/{owner}/{name}/tree/{default_branch}")
+                            href=format!("/{owner}/{name}/tree/{encoded_branch}")
                             class={tab_class("code")}
                         >
                             "Code"
@@ -162,7 +185,7 @@ pub fn RepoTabBar(
                 } else {
                     view! {
                         <a
-                            href=format!("/{owner}/{name}/commits/{default_branch}")
+                            href=format!("/{owner}/{name}/commits/{encoded_branch}")
                             class={tab_class("commits")}
                         >
                             "Commits"

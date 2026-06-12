@@ -142,6 +142,7 @@ pub fn CommitsPage() -> impl IntoView {
                                         name={name.clone()}
                                         default_branch={default_branch.clone()}
                                         has_commits={has_commits}
+                                        current_branch={branch()}
                                     />
 
                                     <Suspense fallback=|| view! { <p class="text-muted">"Loading commits..."</p> }>
