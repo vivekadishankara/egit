@@ -245,8 +245,6 @@ LEPTOS_SITE_ROOT=site
 6. ✅ **HTTPS Git push** — Axum smart HTTP routes, Basic Auth
 7. ✅ **Repo browser** — file tree via `gix`, blob viewer, syntax highlight
 8. ✅ **README rendering** — detect README.md, render via pulldown-cmark
-    1. Known issues
-        * main branch defaults to the local default
 9. **Commit log + diff** — commit history page, single commit diff view
 10. **Pull requests** — create, list, diff between branches, merge, close
 11. **User profiles** — avatar, bio, repo list

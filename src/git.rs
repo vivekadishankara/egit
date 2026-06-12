@@ -299,3 +299,49 @@ pub fn has_commits(repo_base: &str, username: &str, reponame: &str) -> bool {
     }
     false
 }
+
+/// Information about a single commit in the log.
+pub struct CommitInfo {
+    pub id: String,
+    pub short_id: String,
+    pub author_name: String,
+    pub author_email: String,
+    pub message: String,
+    pub timestamp: i64,
+}
+
+/// Get the commit log for a repository's branch.
+pub fn get_commit_log(
+    repo_base: &str,
+    username: &str,
+    reponame: &str,
+    revision: &str,
+) -> anyhow::Result<Vec<CommitInfo>> {
+    let repo = gix::open(repo_path(repo_base, username, reponame))?;
+    let commit = resolve_commit(&repo, revision)?;
+    let oid = commit.id().detach();
+
+    let walk = repo.rev_walk([oid]).all()?;
+
+    let mut commits = Vec::new();
+    for info in walk {
+        let info = info?;
+        let commit_obj = info.object()?;
+        let msg = commit_obj.message_raw_sloppy().to_string();
+        let first_line = msg.lines().next().unwrap_or(&msg).to_string();
+        let author = commit_obj.author()?;
+        let time = commit_obj.time()?;
+        let hex = info.id.to_string();
+
+        commits.push(CommitInfo {
+            id: hex.clone(),
+            short_id: hex[..7].to_string(),
+            author_name: author.name.to_string(),
+            author_email: author.email.to_string(),
+            message: first_line,
+            timestamp: time.seconds,
+        });
+    }
+
+    Ok(commits)
+}
