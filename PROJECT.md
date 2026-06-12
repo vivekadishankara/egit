@@ -25,8 +25,8 @@ A self-hosted Git forge built entirely in Rust, inspired by GitHub. Full-stack L
 - [x] User auth (register, login, logout, session management)
 - [ ] User profiles (avatar, bio, list of repos)
 - [ ] Repository creation, deletion, basic settings
-- [ ] Repository browser (file tree, file viewer with syntax highlight)
-- [ ] README rendering (Markdown → HTML)
+- [x] Repository browser (file tree, file viewer with syntax highlight)
+- [x] README rendering (Markdown → HTML)
 - [ ] Commit history (list, individual commit diff)
 - [ ] Pull requests (open, view diff, merge, close)
 - [ ] Full theme system (CSS variable themes stored in DB, `data-theme` on `<html>`)
@@ -243,8 +243,10 @@ LEPTOS_SITE_ROOT=site
 4. ✅ **Theme system** — CSS variables, per-user theme, `data-theme` SSR
 5. ✅ **Repo creation** — form, `gix::init_bare`, insert DB row
 6. ✅ **HTTPS Git push** — Axum smart HTTP routes, Basic Auth
-7. **Repo browser** — file tree via `gix`, blob viewer, syntax highlight
-8. **README rendering** — detect README.md, render via pulldown-cmark
+7. ✅ **Repo browser** — file tree via `gix`, blob viewer, syntax highlight
+8. ✅ **README rendering** — detect README.md, render via pulldown-cmark
+    1. Known issues
+        * main branch defaults to the local default
 9. **Commit log + diff** — commit history page, single commit diff view
 10. **Pull requests** — create, list, diff between branches, merge, close
 11. **User profiles** — avatar, bio, repo list

@@ -60,9 +60,7 @@ async fn main() {
         repo_base_path: repo_base_path.clone(),
     };
 
-    let app = Router::new()
-        .nest_service("/pkg", ServeDir::new(pkg_path))
-        .layer(Extension(git_state))
+    let git_router = Router::new()
         .route(
             "/{username}/{reponame}/info/refs",
             axum::routing::get(egit::git_routes::handle_info_refs),
@@ -75,6 +73,10 @@ async fn main() {
             "/{username}/{reponame}/git-receive-pack",
             axum::routing::post(egit::git_routes::handle_receive_pack),
         )
+        .layer(Extension(git_state));
+
+    let app_router = Router::new()
+        .nest_service("/pkg", ServeDir::new(pkg_path))
         .leptos_routes_with_context(
             &leptos_options,
             routes,
@@ -102,7 +104,11 @@ async fn main() {
                     let pool = pool_mw.clone();
                     theme_middleware(pool, req, next)
                 })),
-        )
+        );
+
+    let app = Router::new()
+        .merge(git_router)
+        .merge(app_router)
         .with_state(leptos_options);
 
     tracing::info!("eGit listening on http://{}", addr);

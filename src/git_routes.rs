@@ -111,7 +111,15 @@ pub async fn handle_info_refs(
         }
     };
 
-    (git_headers(content_type), output).into_response()
+    // Build response: pkt-line "# service={cmd}\n" + flush packet + ref advertisement
+    // pkt-len = 4 (hex prefix) + 10 ("# service=") + cmd.len() + 1 ("\n")
+    let pkt_len = 15 + cmd.len();
+    let service_pkt = format!("{:04x}# service={}\n", pkt_len, cmd);
+    let mut response = service_pkt.into_bytes();
+    response.extend_from_slice(b"0000");
+    response.extend_from_slice(&output);
+
+    (git_headers(content_type), response).into_response()
 }
 
 /// POST /:username/:reponame.git/git-upload-pack

@@ -1,18 +1,191 @@
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
+use serde::{Deserialize, Serialize};
+
+use crate::components::file_tree::{FileTree, TreeEntry};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EntryDto {
+    name: String,
+    is_dir: bool,
+}
+
+#[server(GetTreeEntries, "/api")]
+pub async fn get_tree_entries(
+    username: String,
+    reponame: String,
+    revision: String,
+    path: String,
+) -> Result<Vec<EntryDto>, ServerFnError> {
+    let repo_base: String = expect_context::<String>();
+    let raw = crate::git::list_directory(&repo_base, &username, &reponame, &revision, &path)
+        .map_err(|e| ServerFnError::new(format!("Failed to read repository: {e}")))?;
+    Ok(raw
+        .into_iter()
+        .map(|(name, is_dir)| EntryDto { name, is_dir })
+        .collect())
+}
 
 #[component]
 pub fn TreePage() -> impl IntoView {
     let params = use_params_map();
-    let username = move || params.get().get("username").unwrap_or_default();
-    let reponame = move || params.get().get("reponame").unwrap_or_default();
+
+    let username = move || {
+        params
+            .get()
+            .get("username")
+            .unwrap_or_default()
+            .to_string()
+    };
+    let reponame = move || {
+        params
+            .get()
+            .get("reponame")
+            .unwrap_or_default()
+            .to_string()
+    };
+    let branch = move || {
+        params
+            .get()
+            .get("branch")
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "HEAD".to_string())
+    };
+    let path = move || {
+        params
+            .get()
+            .get("path")
+            .map(|s| s.trim_start_matches('/').to_string())
+            .unwrap_or_default()
+    };
+
+    let entries = Resource::new(
+        move || (username(), reponame(), branch(), path()),
+        |(u, r, b, p)| async move { get_tree_entries(u, r, b, p).await },
+    );
+
+    let crumbs = move || {
+        let p = path();
+        let u = username();
+        let r = reponame();
+        let b = branch();
+        let mut crumbs = Vec::new();
+        let mut accumulated = String::new();
+        for part in p.split('/') {
+            if !accumulated.is_empty() {
+                accumulated.push('/');
+            }
+            accumulated.push_str(part);
+            let href = format!("/{u}/{r}/tree/{b}/{accumulated}");
+            crumbs.push((part.to_string(), href));
+        }
+        crumbs
+    };
+
+    let parent_url = move || {
+        let u = username();
+        let r = reponame();
+        let b = branch();
+        let p = path();
+        if p.is_empty() {
+            format!("/{u}/{r}/tree/{b}")
+        } else {
+            let parent = match p.rsplit_once('/') {
+                Some((head, _)) => head,
+                None => "",
+            };
+            if parent.is_empty() {
+                format!("/{u}/{r}/tree/{b}")
+            } else {
+                format!("/{u}/{r}/tree/{b}/{parent}")
+            }
+        }
+    };
 
     view! {
         <div class="container">
             <h1 class="page-title">
-                {username} "/" <span class="text-accent">{reponame}</span>
+                <a
+                    href=format!("/{}/{}/tree/{}", username(), reponame(), branch())
+                    class="no-underline"
+                >
+                    <span class="text-accent">{username()}</span>
+                    <span class="text-muted">"/"</span>
+                    <span class="text-accent">{reponame()}</span>
+                </a>
             </h1>
-            <p class="text-muted">"File tree — coming in step 7"</p>
+
+            <div class="flex items-center gap-1 text-sm text-muted mb-4 flex-wrap">
+                <a
+                    href=format!("/{}/{}", username(), reponame())
+                    class="text-accent hover:underline no-underline"
+                >
+                    {reponame()}
+                </a>
+                <span>" / "</span>
+                <a
+                    href=format!("/{}/{}/tree/{}", username(), reponame(), branch())
+                    class="text-accent hover:underline no-underline"
+                >
+                    {branch()}
+                </a>
+                {move || {
+                    crumbs()
+                        .into_iter()
+                        .map(|(name, href)| {
+                            view! {
+                                <span>" / "</span>
+                                <a href=href class="text-accent hover:underline no-underline">
+                                    {name}
+                                </a>
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                }}
+            </div>
+
+            <Suspense fallback=|| view! { <p class="text-muted">"Loading..."</p> }>
+                {move || {
+                    entries.get().map(|result| match result {
+                        Ok(list) => {
+                            let tree_entries: Vec<TreeEntry> = list
+                                .into_iter()
+                                .map(|dto| TreeEntry {
+                                    name: dto.name,
+                                    is_dir: dto.is_dir,
+                                })
+                                .collect();
+
+                            if tree_entries.is_empty() {
+                                view! {
+                                    <p class="text-muted text-sm">"This directory is empty."</p>
+                                }
+                                .into_any()
+                            } else {
+                                view! {
+                                    <FileTree
+                                        entries=tree_entries
+                                        username=username()
+                                        reponame=reponame()
+                                        branch=branch()
+                                        current_path=path()
+                                    />
+                                }
+                                .into_any()
+                            }
+                        }
+                        Err(e) => {
+                            view! { <div class="alert-error">{e.to_string()}</div> }.into_any()
+                        }
+                    })
+                }}
+            </Suspense>
+
+            <div class="mt-4">
+                <a href=parent_url() class="btn-secondary text-sm no-underline">
+                    "← Back"
+                </a>
+            </div>
         </div>
     }
 }

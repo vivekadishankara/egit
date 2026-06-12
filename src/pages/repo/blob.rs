@@ -1,18 +1,220 @@
+#![cfg_attr(not(feature = "ssr"), allow(unused_imports))]
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
+use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlobData {
+    pub content: String,
+    pub highlighted: String,
+    pub extension: String,
+    pub size: usize,
+    pub is_binary: bool,
+    pub line_count: usize,
+}
+
+#[cfg(feature = "ssr")]
+fn syntax_set() -> &'static syntect::parsing::SyntaxSet {
+    static SS: OnceLock<syntect::parsing::SyntaxSet> = OnceLock::new();
+    SS.get_or_init(|| syntect::parsing::SyntaxSet::load_defaults_newlines())
+}
+
+#[cfg(feature = "ssr")]
+fn theme_set() -> &'static syntect::highlighting::ThemeSet {
+    static TS: OnceLock<syntect::highlighting::ThemeSet> = OnceLock::new();
+    TS.get_or_init(|| syntect::highlighting::ThemeSet::load_defaults())
+}
+
+#[cfg(feature = "ssr")]
+fn highlight(code: &str, extension: &str) -> String {
+    let ss = syntax_set();
+    let ts = theme_set();
+
+    let syntax = ss
+        .find_syntax_by_extension(extension)
+        .unwrap_or_else(|| ss.find_syntax_plain_text());
+
+    let theme = ts
+        .themes
+        .get("base16-ocean.dark")
+        .unwrap_or_else(|| ts.themes.values().next().unwrap());
+
+    syntect::html::highlighted_html_for_string(code, ss, syntax, theme)
+        .unwrap_or_else(|e| format!("<pre>Highlight error: {e}</pre>"))
+}
+
+#[server(GetBlobContent, "/api")]
+pub async fn get_blob_content(
+    username: String,
+    reponame: String,
+    revision: String,
+    path: String,
+) -> Result<BlobData, ServerFnError> {
+    let repo_base: String = expect_context::<String>();
+
+    let (data, ext) = crate::git::read_file(&repo_base, &username, &reponame, &revision, &path)
+        .map_err(|e| ServerFnError::new(format!("Failed to read file: {e}")))?;
+
+    let is_binary = data.contains(&0);
+
+    let (content, highlighted, line_count) = if is_binary {
+        let info = format!("Binary file ({} bytes)", data.len());
+        (info.clone(), format!("<pre class=\"text-muted text-sm\">{info}</pre>"), 0)
+    } else {
+        let s = String::from_utf8_lossy(&data).to_string();
+        let lines = s.lines().count();
+        let html = highlight(&s, &ext);
+        (s, html, lines)
+    };
+
+    Ok(BlobData {
+        content,
+        highlighted,
+        extension: ext,
+        size: data.len(),
+        is_binary,
+        line_count,
+    })
+}
 
 #[component]
 pub fn BlobPage() -> impl IntoView {
     let params = use_params_map();
-    let username = move || params.get().get("username").unwrap_or_default();
-    let reponame = move || params.get().get("reponame").unwrap_or_default();
+
+    let username = move || {
+        params
+            .get()
+            .get("username")
+            .unwrap_or_default()
+            .to_string()
+    };
+    let reponame = move || {
+        params
+            .get()
+            .get("reponame")
+            .unwrap_or_default()
+            .to_string()
+    };
+    let branch = move || {
+        params
+            .get()
+            .get("branch")
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "HEAD".to_string())
+    };
+    let path = move || {
+        params
+            .get()
+            .get("path")
+            .map(|s| s.trim_start_matches('/').to_string())
+            .unwrap_or_default()
+    };
+
+    let blob = Resource::new(
+        move || (username(), reponame(), branch(), path()),
+        |(u, r, b, p)| async move { get_blob_content(u, r, b, p).await },
+    );
+
+    let crumbs = move || {
+        let p = path();
+        let mut crumbs = Vec::new();
+        let mut accumulated = String::new();
+        for part in p.split('/') {
+            if !accumulated.is_empty() {
+                accumulated.push('/');
+            }
+            accumulated.push_str(part);
+            crumbs.push(part.to_string());
+        }
+        crumbs
+    };
+
+    let tree_url = move || {
+        let u = username();
+        let r = reponame();
+        let b = branch();
+        let p = path();
+        match p.rsplit_once('/') {
+            Some((parent, _)) => {
+                if parent.is_empty() {
+                    format!("/{u}/{r}/tree/{b}")
+                } else {
+                    format!("/{u}/{r}/tree/{b}/{parent}")
+                }
+            }
+            None => format!("/{u}/{r}/tree/{b}"),
+        }
+    };
 
     view! {
         <div class="container">
-            <h1 class="page-title">
-                {username} "/" <span class="text-accent">{reponame}</span>
-            </h1>
-            <p class="text-muted">"File viewer — coming in step 7"</p>
+            <div class="mb-4">
+                <a href=format!("/{}/{}", username(), reponame()) class="no-underline">
+                    <span class="text-accent">{username()}</span>
+                    <span class="text-muted">"/"</span>
+                    <span class="text-accent">{reponame()}</span>
+                </a>
+            </div>
+
+            <div class="flex items-center gap-1 text-sm text-muted mb-4 flex-wrap">
+                <a
+                    href=format!("/{}/{}/tree/{}", username(), reponame(), branch())
+                    class="text-accent hover:underline no-underline"
+                >
+                    {branch()}
+                </a>
+                {move || {
+                    crumbs()
+                        .into_iter()
+                        .map(|name| {
+                            view! { <span>" / " <span class="text-text">{name}</span></span> }
+                        })
+                        .collect::<Vec<_>>()
+                }}
+            </div>
+
+            <Suspense fallback=|| view! { <p class="text-muted">"Loading..."</p> }>
+                {move || {
+                    blob.get().map(|result| match result {
+                        Ok(data) => {
+                            view! {
+                                <div class="card mb-4">
+                                    <div class="flex items-center justify-between text-sm text-muted px-1 pb-2 border-b border-theme mb-2">
+                                        <span>
+                                            {if data.extension.is_empty() {
+                                                "Unknown file".to_string()
+                                            } else {
+                                                format!(".{} file", data.extension)
+                                            }}
+                                            " — "
+                                            {data.size} " bytes"
+                                        </span>
+                                        {if !data.is_binary {
+                                            view! {
+                                                <span>{data.line_count} " lines"</span>
+                                            }.into_any()
+                                        } else {
+                                            view! { <span></span> }.into_any()
+                                        }}
+                                    </div>
+                                    <div
+                                        class="overflow-x-auto text-sm leading-relaxed [&_pre]:!bg-transparent"
+                                        inner_html=data.highlighted
+                                    ></div>
+                                </div>
+                            }.into_any()
+                        }
+                        Err(e) => {
+                            view! { <div class="alert-error">{e.to_string()}</div> }.into_any()
+                        }
+                    })
+                }}
+            </Suspense>
+
+            <a href=tree_url() class="btn-secondary text-sm no-underline">
+                "← Back to tree"
+            </a>
         </div>
     }
 }
