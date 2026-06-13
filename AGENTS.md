@@ -49,9 +49,11 @@ There are no tests, no Clippy in CI, no typecheck step.
 
 ### Git
 - Bare repos at `{REPO_BASE_PATH}/{username}/{reponame}.git`.
-- `gix` for read ops (tree, blob, log, diff); `git` CLI for init/commit-tree/show.
+- `gix` for read ops (tree, blob, log, commit detail); `git` CLI for init/commit-tree/show/diff/merge.
 - `init_bare` creates an empty initial commit and sets HEAD to `refs/heads/main`.
 - Default branch resolved at display time via `get_default_branch()`.
+- `get_pr_diff` uses `git diff refs/heads/{base}...refs/heads/{head}` (three-dot syntax).
+- PR merge uses `git merge-tree --write-tree` + `git commit-tree` (with two parents) + `git update-ref` — all on the bare repo, no worktree needed.
 
 ### Themes
 - Six themes defined in `style/input.css`: dark, light, dracula, nord, solarized, gruvbox.
@@ -62,6 +64,14 @@ There are no tests, no Clippy in CI, no typecheck step.
 - Tab bar (Overview / Code / Commits / Pulls) appears on overview, commits, and pulls pages.
 - TreePage and BlobPage are **missing** the tab bar — they show breadcrumbs only.
 - The "Code" tab link goes to `/tree/{default_branch}`. Overview also only shows "Code" and "Commits" tabs when `has_commits` is true.
+- The Pull Requests tab is always visible and always an `<a>` link (clickable even when active), so you can navigate back to the PR list from the PR detail page.
+
+### Pull requests
+- Server functions in `src/server/prs.rs`: create, list, get detail, merge, close, get branch list, get PR diff, get counts.
+- `create_pull_request` rejects duplicate PRs for the same head+base (any status: open/merged/closed).
+- `merge_pull_request` and `close_pull_request` verify the caller is the PR author via session auth.
+- Redirect after PR creation uses `leptos_axum::redirect` inside the server function (same pattern as login/register).
+- Pages: list (`/pulls`), new (`/pulls/new`), detail (`/pulls/:pr_id`).
 
 ## Server functions
 
