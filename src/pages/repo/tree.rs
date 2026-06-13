@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::components::file_tree::{FileTree, TreeEntry};
 use crate::components::repo_header::RepoHeader;
+use crate::components::clone_button::CloneButton;
 use crate::components::repo_tab_bar::{url_encode_branch, BranchSelector, RepoTabBar, get_repo_tab_meta};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -119,12 +120,16 @@ pub fn TreePage() -> impl IntoView {
                                         current_branch={branch()}
 
                                     />
-                                    <BranchSelector
-                                        owner={username()}
-                                        name={reponame()}
-                                        current_branch={branch()}
-                                        redirect_to="/tree/"
-                                    />
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <BranchSelector
+                                            owner={username()}
+                                            name={reponame()}
+                                            current_branch={branch()}
+                                            redirect_to="/tree/"
+                                        />
+                                        <CloneButton owner={username()} name={reponame()} />
+                                    </div>
+
                                 </>
                             }.into_any()
                         }

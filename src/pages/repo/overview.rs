@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::components::markdown::Markdown;
 use crate::components::repo_header::RepoHeader;
+use crate::components::clone_button::CloneButton;
 use crate::components::repo_tab_bar::{BranchSelector, RepoTabBar};
 use crate::server::prs::get_pull_request_counts;
 use uuid::Uuid;
@@ -148,16 +149,19 @@ pub fn RepoOverviewPage() -> impl IntoView {
 
                                     />
 
-                                    {has_commits.then(|| {
-                                        view! {
-                                            <BranchSelector
-                                                owner={owner.clone()}
-                                                name={name.clone()}
-                                                current_branch={branch().unwrap_or_else(|| default_branch.clone())}
-                                                redirect_to="?branch="
-                                            />
-                                        }
-                                    })}
+                                    <div class="flex items-center gap-2 mb-2">
+                                        {has_commits.then(|| {
+                                            view! {
+                                                <BranchSelector
+                                                    owner={owner.clone()}
+                                                    name={name.clone()}
+                                                    current_branch={branch().unwrap_or_else(|| default_branch.clone())}
+                                                    redirect_to="?branch="
+                                                />
+                                            }
+                                        })}
+                                        <CloneButton owner={owner.clone()} name={name.clone()} />
+                                    </div>
 
                                     <div class="flex gap-6">
                                         <div class="w-64 shrink-0">

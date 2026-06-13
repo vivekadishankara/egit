@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::overview::get_repo_overview;
 use crate::components::repo_header::RepoHeader;
+use crate::components::clone_button::CloneButton;
 use crate::components::repo_tab_bar::{BranchSelector, RepoTabBar};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -125,16 +126,19 @@ pub fn CommitsPage() -> impl IntoView {
 
                                     />
 
-                                    {has_commits.then(|| {
-                                        view! {
-                                            <BranchSelector
-                                                owner={owner.clone()}
-                                                name={name.clone()}
-                                                current_branch={branch()}
-                                                redirect_to="/commits/"
-                                            />
-                                        }
-                                    })}
+                                    <div class="flex items-center gap-2 mb-2">
+                                        {has_commits.then(|| {
+                                            view! {
+                                                <BranchSelector
+                                                    owner={owner.clone()}
+                                                    name={name.clone()}
+                                                    current_branch={branch()}
+                                                    redirect_to="/commits/"
+                                                />
+                                            }
+                                        })}
+                                        <CloneButton owner={owner.clone()} name={name.clone()} />
+                                    </div>
 
                                     <Suspense fallback=|| view! { <p class="text-muted">"Loading commits..."</p> }>
                                         {move || {

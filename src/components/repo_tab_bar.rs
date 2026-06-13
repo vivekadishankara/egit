@@ -76,7 +76,7 @@ pub fn BranchSelector(
     let name2 = name.clone();
     let current_branch2 = current_branch.clone();
     view! {
-        <div class="relative inline-block mb-2">
+        <div class="relative inline-block">
             <Suspense fallback=move || {
                 view! { <span class="text-sm text-muted">{current_branch.clone()}</span> }
             }>
