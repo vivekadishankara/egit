@@ -20,49 +20,12 @@ fn get_ssh_url(owner: &str, name: &str) -> String {
     format!("git@localhost:{}/{}.git", owner, name)
 }
 
-#[cfg(feature = "hydrate")]
-fn do_copy(input: &web_sys::HtmlInputElement) {
-    input.select();
-    if let Some(window) = web_sys::window() {
-        if let Some(doc) = window.document() {
-            use wasm_bindgen::JsCast;
-            let html_doc: &web_sys::HtmlDocument = doc.unchecked_ref();
-            let _ = html_doc.exec_command("copy");
-        }
-    }
-}
-
-#[component]
-fn CloneTabContent(url: String, copied: RwSignal<bool>) -> impl IntoView {
-    let input = NodeRef::<leptos::html::Input>::new();
-
-    let copy = move |_: leptos::ev::MouseEvent| {
-        #[cfg(feature = "hydrate")]
-        if let Some(input) = input.get() {
-            do_copy(&input);
-        }
-        copied.set(true);
-        set_timeout(move || copied.set(false), std::time::Duration::from_secs(2));
-    };
-
-    view! {
-        <div class="flex flex-col gap-2 w-full">
-            <input type="text" class="input w-full" readonly value=url node_ref=input />
-            <button class="self-start text-sm px-3 py-1 rounded-md bg-accent text-white cursor-pointer border-none" on:click=copy>
-                {move || if copied.get() { "Copied!" } else { "Copy" }}
-            </button>
-        </div>
-    }
-}
-
 #[component]
 pub fn CloneButton(owner: String, name: String) -> impl IntoView {
     let http_url = get_http_url(&owner, &name);
     let ssh_url = get_ssh_url(&owner, &name);
     let http_id = format!("clone-http-{}-{}", owner, name);
     let ssh_id = format!("clone-ssh-{}-{}", owner, name);
-    let copied_http = RwSignal::new(false);
-    let copied_ssh = RwSignal::new(false);
 
     let style_css = format!(
         "#{h}:checked ~ .clone-http-content {{ display: flex; }} \
@@ -76,7 +39,12 @@ pub fn CloneButton(owner: String, name: String) -> impl IntoView {
         h = http_id, s = ssh_id
     );
 
+    let copy_script = "var i=this.previousElementSibling;i.select();i.setSelectionRange(0,99999);document.execCommand('copy');var t=this.textContent;this.textContent='Copied!';setTimeout(function(){this.textContent=t}.bind(this),2000)";
+
+    let close_script = "if(!window.__egitClose){window.__egitClose=true;document.addEventListener('click',function(e){document.querySelectorAll('details').forEach(function(d){if(!d.contains(e.target))d.removeAttribute('open')})})}";
+
     view! {
+        <script>{close_script}</script>
         <details class="relative inline-block">
             <summary class="text-sm px-3 py-1.5 rounded-md border border-theme bg-surface-secondary text-text cursor-pointer list-none">
                 "Clone"
@@ -93,10 +61,16 @@ pub fn CloneButton(owner: String, name: String) -> impl IntoView {
                     "SSH"
                 </label>
                 <div class="p-3 clone-http-content w-full">
-                    <CloneTabContent url=http_url copied=copied_http />
+                    <div class="flex flex-col gap-2 w-full">
+                        <input type="text" class="input w-full" readonly value=http_url />
+                        <button class="self-start text-sm px-3 py-1 rounded-md bg-accent text-white cursor-pointer border-none" onclick={copy_script}>"Copy"</button>
+                    </div>
                 </div>
                 <div class="p-3 clone-ssh-content w-full">
-                    <CloneTabContent url=ssh_url copied=copied_ssh />
+                    <div class="flex flex-col gap-2 w-full">
+                        <input type="text" class="input w-full" readonly value=ssh_url />
+                        <button class="self-start text-sm px-3 py-1 rounded-md bg-accent text-white cursor-pointer border-none" onclick={copy_script}>"Copy"</button>
+                    </div>
                 </div>
             </div>
         </details>
