@@ -46,20 +46,30 @@ pub async fn create_pull_request(
     head_branch: String,
     base_branch: String,
 ) -> Result<Uuid, ServerFnError> {
+    use crate::auth;
+    use axum::http::HeaderMap;
+
     let pool = expect_context::<PgPool>();
-    
+    let headers: HeaderMap = leptos_axum::extract()
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+    let session_id = auth::session_id_from_headers(&headers);
+    let session = auth::get_session(&pool, session_id.as_deref())
+        .await
+        .ok_or_else(|| ServerFnError::new("Not logged in"))?;
+
     let pr_id = sqlx::query_scalar!(
         r#"
-        INSERT INTO pull_requests (repo_id, title, body, head_branch, base_branch, status)
-        VALUES ($1, $2, $3, $4, $5, 'open')
+        INSERT INTO pull_requests (repo_id, author_id, title, body, head_branch, base_branch, status)
+        VALUES ($1, $2, $3, $4, $5, $6, 'open')
         RETURNING id
         "#,
-        repo_id, title, body, head_branch, base_branch
+        repo_id, session.user_id, title, body, head_branch, base_branch
     )
     .fetch_one(&pool)
     .await
     .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?;
-    
+
     Ok(pr_id)
 }
 
