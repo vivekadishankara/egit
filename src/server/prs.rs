@@ -58,6 +58,24 @@ pub async fn create_pull_request(
         .await
         .ok_or_else(|| ServerFnError::new("Not logged in"))?;
 
+    let existing = sqlx::query_scalar!(
+        r#"
+        SELECT id FROM pull_requests
+        WHERE repo_id = $1 AND head_branch = $2 AND base_branch = $3 AND status = 'open'
+        LIMIT 1
+        "#,
+        repo_id, head_branch, base_branch
+    )
+    .fetch_optional(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?;
+
+    if existing.is_some() {
+        return Err(ServerFnError::new(
+            "An open pull request already exists for these branches",
+        ));
+    }
+
     let pr_id = sqlx::query_scalar!(
         r#"
         INSERT INTO pull_requests (repo_id, author_id, title, body, head_branch, base_branch, status)
