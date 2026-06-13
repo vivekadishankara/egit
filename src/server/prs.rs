@@ -46,6 +46,8 @@ pub async fn create_pull_request(
     body: Option<String>,
     head_branch: String,
     base_branch: String,
+    username: String,
+    reponame: String,
 ) -> Result<Uuid, ServerFnError> {
     use crate::auth;
     use axum::http::HeaderMap;
@@ -93,6 +95,7 @@ pub async fn create_pull_request(
     .await
     .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?;
 
+    leptos_axum::redirect(&format!("/{username}/{reponame}/pulls/{pr_id}"));
     Ok(pr_id)
 }
 

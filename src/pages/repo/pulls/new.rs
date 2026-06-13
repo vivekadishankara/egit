@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use leptos_router::hooks::{use_params_map, use_navigate};
+use leptos_router::hooks::use_params_map;
 
 use super::super::overview::get_repo_overview;
 use crate::components::repo_tab_bar::RepoTabBar;
@@ -8,7 +8,6 @@ use crate::server::prs::{get_branch_list_for_pr, CreatePullRequest};
 #[component]
 pub fn NewPullPage() -> impl IntoView {
     let params = use_params_map();
-    let navigate = use_navigate();
 
     let username = move || {
         params
@@ -36,15 +35,6 @@ pub fn NewPullPage() -> impl IntoView {
     );
 
     let create_pr = ServerAction::<CreatePullRequest>::new();
-
-    Effect::new(move |_| {
-        if let Some(Ok(pr_id)) = create_pr.value().get() {
-            navigate(
-                &format!("/{}/{}/pulls/{}", username(), reponame(), pr_id),
-                Default::default(),
-            );
-        }
-    });
 
     view! {
         <div class="container">
@@ -103,6 +93,8 @@ pub fn NewPullPage() -> impl IntoView {
 
                                         <ActionForm action=create_pr>
                                             <input type="hidden" name="repo_id" value=repo_id.to_string()/>
+                                            <input type="hidden" name="username" value=owner.clone()/>
+                                            <input type="hidden" name="reponame" value=name.clone()/>
 
                                             <div class="form-group">
                                                 <label class="form-label" for="base_branch">"Base branch"</label>

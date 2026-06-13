@@ -193,19 +193,13 @@ pub fn RepoTabBar(
                     }.into_any()
                 }
             })}
-            {if active == "pulls" {
-                view! {
-                    <span class={tab_class("pulls")}>
-                        "Pull requests"
-                    </span>
-                }.into_any()
-            } else {
+            {
                 view! {
                     <a href=format!("/{owner}/{name}/pulls") class={tab_class("pulls")}>
                         "Pull requests"
                     </a>
                 }.into_any()
-            }}
+            }
         </div>
     }
 }
