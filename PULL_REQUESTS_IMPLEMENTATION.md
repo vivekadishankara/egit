@@ -10,7 +10,7 @@
   - `src/pages/repo/pulls/list.rs` — PullListPage
   - `src/pages/repo/pulls/new.rs` — NewPullPage  
   - `src/pages/repo/pulls/detail.rs` — PullDetailPage
-- **RepoTabBar**: Now shows [Overview, Code, Commits, Pull Requests] (PR tab shown conditionally via `has_pull_requests` prop)
+- **RepoTabBar**: Shows [Overview, Code, Commits, Pull Requests] (PR tab is unconditional)
 - **Overview sidebar**: PR sidebar with live counts on the repo overview page
 
 ### Project Architecture (from AGENTS.md)
@@ -66,15 +66,22 @@ PR routes already registered:
   - Flex layout: sidebar (w-64) on the left, existing content on the right
 
 ### Step 6: RepoTabBar Component (`src/components/repo_tab_bar.rs`) ✅
-- Added `has_pull_requests: bool` prop
 - Added Pull Requests tab (clickable link or static span based on `active`)
-- PR tab shown only when `has_pull_requests` is true
-- All call sites updated: `overview.rs`, `tree.rs`, `blob.rs`, `commits.rs`
+- PR tab is unconditional (always visible in the tab bar)
+- `has_pull_requests` prop removed from `RepoTabBar`
+- All call sites updated: `overview.rs`, `tree.rs`, `blob.rs`, `commits.rs`, `list.rs`
 
-### Step 7: Implement Pull Requests List Page ❌ (stub only)
+### Step 7: Implement Pull Requests List Page ✅
 **File**: `src/pages/repo/pulls/list.rs`
 
-Current: `"Pull requests — coming in step 10"` placeholder.
+Full `PullListPage` implementation:
+- Reads `username`/`reponame` from URL params, `status` from `?status=` query (defaults to `"open"`)
+- Fetches repo overview via `get_repo_overview` for tab bar meta, description, private badge
+- Fetches PR list via `list_pull_requests(repo_id, status)`
+- Left sidebar with Open / Merged / Closed filter links (active state highlighted)
+- PR card list with title, status badge (`--color-success` / `--color-accent` / `--color-danger`), author, branch info (`head → base`), and relative timestamp via `format_pr_time`
+- "New pull request" button when list is empty
+- `<RepoTabBar active="pulls">` with repo header (owner/name, private badge, description)
 
 ### Step 8: Helper Functions (`src/server/prs.rs`) ✅
 - `get_repo_id_by_name` (already part of Step 1)
@@ -100,11 +107,12 @@ Current: `"Pull request detail — coming in step 10"` placeholder.
 | `src/server/prs.rs` | All PR server functions, PR count helpers, cfg_attr for sqlx |
 | `src/lib.rs` | Removed cfg gate from `pub mod server;` |
 | `src/git.rs` | `get_pr_diff` using git CLI |
-| `src/components/repo_tab_bar.rs` | `has_pull_requests` prop + PR tab |
+| `src/components/repo_tab_bar.rs` | PR tab (unconditional), removed `has_pull_requests` prop |
 | `src/pages/repo/overview.rs` | PR sidebar, repo_id+has_pull_requests in RepoInfo |
-| `src/pages/repo/tree.rs` | `has_pull_requests={false}` added to RepoTabBar |
-| `src/pages/repo/blob.rs` | `has_pull_requests={false}` added to RepoTabBar |
-| `src/pages/repo/commits.rs` | `has_pull_requests={false}` added to RepoTabBar |
+| `src/pages/repo/tree.rs` | Removed `has_pull_requests={false}` from RepoTabBar |
+| `src/pages/repo/blob.rs` | Removed `has_pull_requests={false}` from RepoTabBar |
+| `src/pages/repo/commits.rs` | Removed `has_pull_requests={false}` from RepoTabBar |
+| `src/pages/repo/pulls/list.rs` | Full PullListPage implementation with tab bar, status filter, PR cards |
 
 ---
 
@@ -120,33 +128,27 @@ sqlx migrate run
 
 ## Next Steps
 
-1. **Implement Pull List Page** (`src/pages/repo/pulls/list.rs`)
-   - Fetch repo_id via `get_repo_id_by_name`
-   - Use `list_pull_requests` to fetch PRs by status
-   - Render PR card list with status badges
-   - Needs `RepoTabBar` with `active="pulls"` and `has_pull_requests`
-
-2. **Implement New PR Page** (`src/pages/repo/pulls/new.rs`)
+1. **Implement New PR Page** (`src/pages/repo/pulls/new.rs`)
    - Branch selection via `get_branch_list_for_pr`
    - Form with title, body, head_branch, base_branch
    - Submit via `create_pull_request`
 
-3. **Implement PR Detail Page** (`src/pages/repo/pulls/detail.rs`)
+2. **Implement PR Detail Page** (`src/pages/repo/pulls/detail.rs`)
    - Fetch PR via `get_pull_request`
    - Merge/Close buttons
    - Author info, timestamps, branch info
    - Diff display (use `get_pr_diff`)
 
-4. **Implement actual git merge logic** in `merge_pull_request`
+3. **Implement actual git merge logic** in `merge_pull_request`
    - Currently only updates DB status
    - Needs to perform git merge in the bare repo
 
-5. **Add diff view** between branches in PR detail page
+4. **Add diff view** between branches in PR detail page
    - Use `get_pr_diff` from `src/git.rs`
 
-6. **User authentication check** (author/collaborator only for merge actions)
+5. **User authentication check** (author/collaborator only for merge actions)
 
-7. **Test full workflow**: create → list → view → merge/close
+6. **Test full workflow**: create → list → view → merge/close
 
 ---
 

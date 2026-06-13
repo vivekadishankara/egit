@@ -131,7 +131,7 @@ pub fn RepoOverviewPage() -> impl IntoView {
                             let readme = info.readme_content.clone();
                             let is_private = info.is_private;
                             let has_commits = info.has_commits;
-                            let has_pull_requests = info.has_pull_requests;
+                            let _has_pull_requests = info.has_pull_requests;
                             let default_branch = info.default_branch.clone();
 
                             view! {
@@ -173,7 +173,7 @@ pub fn RepoOverviewPage() -> impl IntoView {
                                         default_branch={default_branch.clone()}
                                         has_commits={has_commits}
                                         current_branch={branch().unwrap_or_default()}
-                                        has_pull_requests={has_pull_requests}
+
                                     />
 
                                     <div class="flex gap-6">
