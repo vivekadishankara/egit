@@ -27,12 +27,15 @@ pub fn CloneButton(owner: String, name: String) -> impl IntoView {
     let http_id = format!("clone-http-{}-{}", owner, name);
     let ssh_id = format!("clone-ssh-{}-{}", owner, name);
 
-    // CSS to show/hide tab content based on radio state
     let style_css = format!(
         "#{h}:checked ~ .clone-http-content {{ display: flex; }} \
          #{h}:checked ~ .clone-ssh-content {{ display: none; }} \
+         #{h}:checked ~ .clone-tab-http {{ border-bottom-color: var(--color-accent); color: var(--color-accent); }} \
+         #{h}:checked ~ .clone-tab-ssh {{ border-bottom-color: transparent; color: var(--color-muted); }} \
          #{s}:checked ~ .clone-http-content {{ display: none; }} \
-         #{s}:checked ~ .clone-ssh-content {{ display: flex; }}",
+         #{s}:checked ~ .clone-ssh-content {{ display: flex; }} \
+         #{s}:checked ~ .clone-tab-http {{ border-bottom-color: transparent; color: var(--color-muted); }} \
+         #{s}:checked ~ .clone-tab-ssh {{ border-bottom-color: var(--color-accent); color: var(--color-accent); }}",
         h = http_id, s = ssh_id
     );
 
@@ -42,26 +45,26 @@ pub fn CloneButton(owner: String, name: String) -> impl IntoView {
                 "Clone"
                 <span class="ml-1 text-xs text-muted">"▼"</span>
             </summary>
-            <div class="absolute top-full left-0 mt-0.5 rounded-md border border-theme bg-surface shadow-lg z-10 min-w-[320px] bg-surface">
+            <div class="absolute top-full left-0 mt-0.5 rounded-md border border-theme bg-surface shadow-lg z-10 min-w-[320px] bg-surface flex flex-wrap">
                 <style>{style_css}</style>
                 <input type="radio" name="clone-tab" id={http_id.clone()} checked style="display:none" />
                 <input type="radio" name="clone-tab" id={ssh_id.clone()} style="display:none" />
-                <div class="flex border-b border-theme">
-                    <label for={http_id.clone()} class="flex-1 px-3 py-2 text-sm cursor-pointer border-b-2 border-accent text-accent text-center">
-                        "HTTP"
-                    </label>
-                    <label for={ssh_id.clone()} class="flex-1 px-3 py-2 text-sm cursor-pointer border-b-2 border-transparent text-muted text-center">
-                        "SSH"
-                    </label>
-                </div>
-                <div class="p-3 clone-http-content" style="display:flex">
-                    <div class="flex items-center gap-2 w-full">
-                        <input type="text" class="input flex-1" readonly value=http_url />
+                <label for={http_id.clone()} class="clone-tab-http flex-1 px-3 py-2 text-sm cursor-pointer border-b-2 text-center">
+                    "HTTP"
+                </label>
+                <label for={ssh_id.clone()} class="clone-tab-ssh flex-1 px-3 py-2 text-sm cursor-pointer border-b-2 text-center">
+                    "SSH"
+                </label>
+                <div class="p-3 clone-http-content w-full">
+                    <div class="flex flex-col gap-2 w-full">
+                        <input type="text" class="input w-full" readonly value=http_url />
+                        <button class="self-start text-sm px-3 py-1 rounded-md bg-accent text-white cursor-pointer border-none" onclick="var i=this.previousElementSibling;i.select();i.setSelectionRange(0,99999);document.execCommand('copy');var t=this;t.textContent='Copied!';setTimeout(function(){t.textContent='Copy'},2000)">Copy</button>
                     </div>
                 </div>
-                <div class="p-3 clone-ssh-content" style="display:none">
-                    <div class="flex items-center gap-2 w-full">
-                        <input type="text" class="input flex-1" readonly value=ssh_url />
+                <div class="p-3 clone-ssh-content w-full">
+                    <div class="flex flex-col gap-2 w-full">
+                        <input type="text" class="input w-full" readonly value=ssh_url />
+                        <button class="self-start text-sm px-3 py-1 rounded-md bg-accent text-white cursor-pointer border-none" onclick="var i=this.previousElementSibling;i.select();i.setSelectionRange(0,99999);document.execCommand('copy');var t=this;t.textContent='Copied!';setTimeout(function(){t.textContent='Copy'},2000)">Copy</button>
                     </div>
                 </div>
             </div>
