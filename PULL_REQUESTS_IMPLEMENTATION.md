@@ -28,7 +28,7 @@
 **File**: `src/server/prs.rs`
 
 Implemented functions:
-- `create_pull_request(repo_id, title, body, head_branch, base_branch)` → `Uuid`
+- `create_pull_request(repo_id, title, body, head_branch, base_branch)` → `Uuid` (extracts `author_id` from session; rejects duplicate open PRs for same head+base)
 - `list_pull_requests(repo_id, status)` → `Vec<PullRequest>`
 - `get_pull_request(pr_id)` → `PullRequestDetail`
 - `get_repo_id_by_name(username, reponame)` → `Uuid`
@@ -78,9 +78,8 @@ Full `PullListPage` implementation:
 - Reads `username`/`reponame` from URL params, `status` from `?status=` query (defaults to `"open"`)
 - Fetches repo overview via `get_repo_overview` for tab bar meta, description, private badge
 - Fetches PR list via `list_pull_requests(repo_id, status)`
-- Left sidebar with Open / Merged / Closed filter links (active state highlighted)
+- Left sidebar with "New pull request" button at top, then Open / Merged / Closed filter links (active state highlighted)
 - PR card list with title, status badge (`--color-success` / `--color-accent` / `--color-danger`), author, branch info (`head → base`), and relative timestamp via `format_pr_time`
-- "New pull request" button when list is empty
 - `<RepoTabBar active="pulls">` with repo header (owner/name, private badge, description)
 
 ### Step 8: Helper Functions (`src/server/prs.rs`) ✅
@@ -88,10 +87,15 @@ Full `PullListPage` implementation:
 - `get_pull_request_counts` (added in Step 5)
 - `has_pull_requests` (added in Step 5)
 
-### Step 9: Implement New Pull Request Page ❌ (stub only)
+### Step 9: Implement New Pull Request Page ✅
 **File**: `src/pages/repo/pulls/new.rs`
 
-Current: `"New pull request — coming in step 10"` placeholder.
+Full `NewPullPage` implementation:
+- Branch selection via `get_branch_list_for_pr` (base defaults to repo default branch)
+- `<ActionForm>` with hidden `repo_id`, base/head branch `<select>` dropdowns, title `<input>`, body `<textarea>`
+- `ServerAction::<CreatePullRequest>` submit with pending state and error display
+- `Effect` redirects to PR detail page on success
+- Duplicate PR detection: `create_pull_request` rejects creation when an open PR already exists with the same `head_branch` + `base_branch` for the repo
 
 ### Step 10: Implement Pull Request Details Page ❌ (stub only)
 **File**: `src/pages/repo/pulls/detail.rs`
@@ -112,7 +116,9 @@ Current: `"Pull request detail — coming in step 10"` placeholder.
 | `src/pages/repo/tree.rs` | Removed `has_pull_requests={false}` from RepoTabBar |
 | `src/pages/repo/blob.rs` | Removed `has_pull_requests={false}` from RepoTabBar |
 | `src/pages/repo/commits.rs` | Removed `has_pull_requests={false}` from RepoTabBar |
-| `src/pages/repo/pulls/list.rs` | Full PullListPage implementation with tab bar, status filter, PR cards |
+| `src/pages/repo/pulls/list.rs` | Full PullListPage implementation with tab bar, status filter, PR cards; "New pull request" button in sidebar |
+| `src/pages/repo/pulls/new.rs` | Full NewPullPage implementation with branch selects, form, redirect, error display |
+| `src/server/prs.rs` | `create_pull_request` now extracts `author_id` from session and rejects duplicate open PRs for same head+base |
 
 ---
 
@@ -128,27 +134,22 @@ sqlx migrate run
 
 ## Next Steps
 
-1. **Implement New PR Page** (`src/pages/repo/pulls/new.rs`)
-   - Branch selection via `get_branch_list_for_pr`
-   - Form with title, body, head_branch, base_branch
-   - Submit via `create_pull_request`
-
-2. **Implement PR Detail Page** (`src/pages/repo/pulls/detail.rs`)
+1. **Implement PR Detail Page** (`src/pages/repo/pulls/detail.rs`)
    - Fetch PR via `get_pull_request`
    - Merge/Close buttons
    - Author info, timestamps, branch info
    - Diff display (use `get_pr_diff`)
 
-3. **Implement actual git merge logic** in `merge_pull_request`
+2. **Implement actual git merge logic** in `merge_pull_request`
    - Currently only updates DB status
    - Needs to perform git merge in the bare repo
 
-4. **Add diff view** between branches in PR detail page
+3. **Add diff view** between branches in PR detail page
    - Use `get_pr_diff` from `src/git.rs`
 
-5. **User authentication check** (author/collaborator only for merge actions)
+4. **User authentication check** (author/collaborator only for merge actions)
 
-6. **Test full workflow**: create → list → view → merge/close
+5. **Test full workflow**: create → list → view → merge/close
 
 ---
 
