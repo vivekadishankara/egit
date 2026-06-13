@@ -110,12 +110,6 @@ pub fn TreePage() -> impl IntoView {
                                         desc={meta.description}
                                         link_to={Some(tree_url())}
                                     />
-                                    <BranchSelector
-                                        owner={username()}
-                                        name={reponame()}
-                                        current_branch={branch()}
-                                        redirect_to="/tree/"
-                                    />
                                     <RepoTabBar
                                         active="code"
                                         owner={username()}
@@ -124,6 +118,12 @@ pub fn TreePage() -> impl IntoView {
                                         has_commits={meta.has_commits}
                                         current_branch={branch()}
 
+                                    />
+                                    <BranchSelector
+                                        owner={username()}
+                                        name={reponame()}
+                                        current_branch={branch()}
+                                        redirect_to="/tree/"
                                     />
                                 </>
                             }.into_any()

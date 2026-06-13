@@ -115,6 +115,16 @@ pub fn CommitsPage() -> impl IntoView {
                                         link_to={None}
                                     />
 
+                                    <RepoTabBar
+                                        active="commits"
+                                        owner={owner.clone()}
+                                        name={name.clone()}
+                                        default_branch={default_branch.clone()}
+                                        has_commits={has_commits}
+                                        current_branch={branch()}
+
+                                    />
+
                                     {has_commits.then(|| {
                                         view! {
                                             <BranchSelector
@@ -125,16 +135,6 @@ pub fn CommitsPage() -> impl IntoView {
                                             />
                                         }
                                     })}
-
-                                    <RepoTabBar
-                                        active="commits"
-                                        owner={owner.clone()}
-                                        name={name.clone()}
-                                        default_branch={default_branch.clone()}
-                                        has_commits={has_commits}
-                                        current_branch={branch()}
-
-                                    />
 
                                     <Suspense fallback=|| view! { <p class="text-muted">"Loading commits..."</p> }>
                                         {move || {

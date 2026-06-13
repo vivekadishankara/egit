@@ -138,6 +138,16 @@ pub fn RepoOverviewPage() -> impl IntoView {
                                         link_to={None}
                                     />
 
+                                    <RepoTabBar
+                                        active="overview"
+                                        owner={owner.clone()}
+                                        name={name.clone()}
+                                        default_branch={default_branch.clone()}
+                                        has_commits={has_commits}
+                                        current_branch={branch().unwrap_or_default()}
+
+                                    />
+
                                     {has_commits.then(|| {
                                         view! {
                                             <BranchSelector
@@ -148,16 +158,6 @@ pub fn RepoOverviewPage() -> impl IntoView {
                                             />
                                         }
                                     })}
-
-                                    <RepoTabBar
-                                        active="overview"
-                                        owner={owner.clone()}
-                                        name={name.clone()}
-                                        default_branch={default_branch.clone()}
-                                        has_commits={has_commits}
-                                        current_branch={branch().unwrap_or_default()}
-
-                                    />
 
                                     <div class="flex gap-6">
                                         <div class="w-64 shrink-0">

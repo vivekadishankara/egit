@@ -76,7 +76,7 @@ pub fn BranchSelector(
     let name2 = name.clone();
     let current_branch2 = current_branch.clone();
     view! {
-        <div class="relative inline-block">
+        <div class="relative inline-block mb-2">
             <Suspense fallback=move || {
                 view! { <span class="text-sm text-muted">{current_branch.clone()}</span> }
             }>
@@ -143,7 +143,7 @@ pub fn RepoTabBar(
     };
 
     view! {
-        <div class="flex gap-1 items-baseline border-b border-theme mb-6">
+        <div class="flex gap-1 items-baseline border-b border-theme mb-2">
             {if active == "overview" {
                 view! {
                     <span class={tab_class("overview")}>

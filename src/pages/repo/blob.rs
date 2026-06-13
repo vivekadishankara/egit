@@ -156,12 +156,6 @@ pub fn BlobPage() -> impl IntoView {
                                         desc={meta.description}
                                         link_to={Some(format!("/{}/{}", username(), reponame()))}
                                     />
-                                    <BranchSelector
-                                        owner={username()}
-                                        name={reponame()}
-                                        current_branch={branch()}
-                                        redirect_to="/tree/"
-                                    />
                                     <RepoTabBar
                                         active="code"
                                         owner={username()}
@@ -170,6 +164,12 @@ pub fn BlobPage() -> impl IntoView {
                                         has_commits={meta.has_commits}
                                         current_branch={branch()}
 
+                                    />
+                                    <BranchSelector
+                                        owner={username()}
+                                        name={reponame()}
+                                        current_branch={branch()}
+                                        redirect_to="/tree/"
                                     />
                                 </>
                             }.into_any()

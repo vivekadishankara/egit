@@ -185,7 +185,7 @@ pub fn ProfilePage() -> impl IntoView {
                                                     let name = r.name.clone();
                                                     let desc = r.description.clone();
                                                     let is_private = r.is_private;
-                                                    let repo_href = format!("/{}/{}/tree/{}", username, r.name, r.default_branch);
+                                                    let repo_href = format!("/{}/{}", username, r.name);
 
                                                     view! {
                                                         <div class="card">
