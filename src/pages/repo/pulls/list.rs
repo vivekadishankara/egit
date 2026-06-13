@@ -3,6 +3,7 @@ use leptos_router::hooks::{use_params_map, use_query_map};
 use time::OffsetDateTime;
 
 use super::super::overview::get_repo_overview;
+use crate::components::repo_header::RepoHeader;
 use crate::components::repo_tab_bar::RepoTabBar;
 use crate::server::prs::list_pull_requests;
 
@@ -73,18 +74,11 @@ pub fn PullListPage() -> impl IntoView {
         |(u, r)| async move { get_repo_overview(u, r, None).await },
     );
 
-    let repo_id = move || {
-        repo.get().and_then(|r| r.ok()).map(|info| info.repo_id)
-    };
-
     let prs = Resource::new(
-        move || (repo_id(), status()),
-        |(id, s)| async move {
-            if let Some(id) = id {
-                list_pull_requests(id, Some(s)).await.ok()
-            } else {
-                None
-            }
+        move || (username(), reponame(), status()),
+        |(u, r, s)| async move {
+            let repo = get_repo_overview(u, r, None).await.ok()?;
+            list_pull_requests(repo.repo_id, Some(s)).await.ok()
         },
     );
 
@@ -104,24 +98,13 @@ pub fn PullListPage() -> impl IntoView {
 
                             view! {
                                 <div>
-                                    <h1 class="page-title">
-                                        <span class="text-accent">{owner.clone()}</span>
-                                        <span class="text-muted">"/"</span>
-                                        <span class="text-accent">{name.clone()}</span>
-                                        {if is_private {
-                                            view! {
-                                                <span class="ml-2 px-2 py-0.5 text-xs rounded-full border border-theme text-muted">
-                                                    "Private"
-                                                </span>
-                                            }.into_any()
-                                        } else {
-                                            view! { <span></span> }.into_any()
-                                        }}
-                                    </h1>
-
-                                    {desc.as_ref().map(|d| {
-                                        view! { <p class="text-muted mb-4">{d.clone()}</p> }
-                                    })}
+                                    <RepoHeader
+                                        owner={owner.clone()}
+                                        name={name.clone()}
+                                        is_private={is_private}
+                                        desc={desc.clone()}
+                                        link_to={None}
+                                    />
 
                                     <RepoTabBar
                                         active="pulls"

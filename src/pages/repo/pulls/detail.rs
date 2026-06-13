@@ -6,6 +6,7 @@ use uuid::Uuid;
 use super::super::overview::get_repo_overview;
 use crate::components::diff_viewer::DiffViewer;
 use crate::components::markdown::Markdown;
+use crate::components::repo_header::RepoHeader;
 use crate::components::repo_tab_bar::RepoTabBar;
 use crate::pages::auth::get_current_user;
 use crate::server::prs::{
@@ -29,7 +30,7 @@ fn format_pr_time(dt: OffsetDateTime) -> String {
     }
 }
 
-fn status_badge(status: &str, large: bool) -> impl IntoView {
+fn status_badge(status: &str, large: bool) -> impl IntoView + use<'_> {
     let color = match status {
         "open" => "var(--color-success)",
         "merged" => "var(--color-accent)",
@@ -145,24 +146,13 @@ pub fn PullDetailPage() -> impl IntoView {
 
                             view! {
                                 <div>
-                                    <h1 class="page-title">
-                                        <span class="text-accent">{owner.clone()}</span>
-                                        <span class="text-muted">"/"</span>
-                                        <span class="text-accent">{name.clone()}</span>
-                                        {if is_private {
-                                            view! {
-                                                <span class="ml-2 px-2 py-0.5 text-xs rounded-full border border-theme text-muted">
-                                                    "Private"
-                                                </span>
-                                            }.into_any()
-                                        } else {
-                                            view! { <span></span> }.into_any()
-                                        }}
-                                    </h1>
-
-                                    {desc.as_ref().map(|d| {
-                                        view! { <p class="text-muted mb-4">{d.clone()}</p> }
-                                    })}
+                                    <RepoHeader
+                                        owner={owner.clone()}
+                                        name={name.clone()}
+                                        is_private={is_private}
+                                        desc={desc.clone()}
+                                        link_to={None}
+                                    />
 
                                     <RepoTabBar
                                         active="pulls"

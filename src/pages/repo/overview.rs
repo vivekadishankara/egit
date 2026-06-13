@@ -3,6 +3,7 @@ use leptos_router::hooks::{use_params_map, use_query_map};
 use serde::{Deserialize, Serialize};
 
 use crate::components::markdown::Markdown;
+use crate::components::repo_header::RepoHeader;
 use crate::components::repo_tab_bar::{BranchSelector, RepoTabBar};
 use crate::server::prs::get_pull_request_counts;
 use uuid::Uuid;
@@ -104,18 +105,11 @@ pub fn RepoOverviewPage() -> impl IntoView {
         |(u, r, b)| async move { get_repo_overview(u, r, b).await },
     );
 
-    let repo_id = move || {
-        repo.get().and_then(|r| r.ok()).map(|info| info.repo_id)
-    };
-
     let pr_counts = Resource::new(
-        move || repo_id(),
-        |id| async move {
-            if let Some(id) = id {
-                get_pull_request_counts(id).await.ok()
-            } else {
-                None
-            }
+        move || (username(), reponame()),
+        |(u, r)| async move {
+            let repo = get_repo_overview(u, r, None).await.ok()?;
+            get_pull_request_counts(repo.repo_id).await.ok()
         },
     );
 
@@ -136,24 +130,13 @@ pub fn RepoOverviewPage() -> impl IntoView {
 
                             view! {
                                 <div>
-                                    <h1 class="page-title">
-                                        <span class="text-accent">{owner.clone()}</span>
-                                        <span class="text-muted">"/"</span>
-                                        <span class="text-accent">{name.clone()}</span>
-                                        {if is_private {
-                                            view! {
-                                                <span class="ml-2 px-2 py-0.5 text-xs rounded-full border border-theme text-muted">
-                                                    "Private"
-                                                </span>
-                                            }.into_any()
-                                        } else {
-                                            view! { <span></span> }.into_any()
-                                        }}
-                                    </h1>
-
-                                    {desc.as_ref().map(|d| {
-                                        view! { <p class="text-muted mb-4">{d.clone()}</p> }
-                                    })}
+                                    <RepoHeader
+                                        owner={owner.clone()}
+                                        name={name.clone()}
+                                        is_private={is_private}
+                                        desc={desc.clone()}
+                                        link_to={None}
+                                    />
 
                                     {has_commits.then(|| {
                                         view! {

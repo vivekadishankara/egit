@@ -3,6 +3,7 @@ use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
 
 use super::overview::get_repo_overview;
+use crate::components::repo_header::RepoHeader;
 use crate::components::repo_tab_bar::{BranchSelector, RepoTabBar};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -106,24 +107,13 @@ pub fn CommitsPage() -> impl IntoView {
 
                             view! {
                                 <div>
-                                    <h1 class="page-title">
-                                        <span class="text-accent">{owner.clone()}</span>
-                                        <span class="text-muted">"/"</span>
-                                        <span class="text-accent">{name.clone()}</span>
-                                        {if is_private {
-                                            view! {
-                                                <span class="ml-2 px-2 py-0.5 text-xs rounded-full border border-theme text-muted">
-                                                    "Private"
-                                                </span>
-                                            }.into_any()
-                                        } else {
-                                            view! { <span></span> }.into_any()
-                                        }}
-                                    </h1>
-
-                                    {desc.as_ref().map(|d| {
-                                        view! { <p class="text-muted mb-4">{d.clone()}</p> }
-                                    })}
+                                    <RepoHeader
+                                        owner={owner.clone()}
+                                        name={name.clone()}
+                                        is_private={is_private}
+                                        desc={desc.clone()}
+                                        link_to={None}
+                                    />
 
                                     {has_commits.then(|| {
                                         view! {

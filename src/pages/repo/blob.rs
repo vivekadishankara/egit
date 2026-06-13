@@ -4,6 +4,7 @@ use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 
+use crate::components::repo_header::RepoHeader;
 use crate::components::repo_tab_bar::{url_encode_branch, BranchSelector, RepoTabBar, get_repo_tab_meta};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -142,23 +143,19 @@ pub fn BlobPage() -> impl IntoView {
 
     view! {
         <div class="container">
-            <h1 class="page-title">
-                <a href=format!("/{}/{}", username(), reponame()) class="no-underline">
-                    <span class="text-accent">{username()}</span>
-                    <span class="text-muted">"/"</span>
-                    <span class="text-accent">{reponame()}</span>
-                </a>
-            </h1>
-
             <Suspense fallback=|| view! { <p class="text-muted">"Loading..."</p> }>
                 {move || {
                     repo_meta.get().map(|result| match result {
                         Ok(meta) => {
                             view! {
                                 <>
-                                    {meta.description.as_ref().map(|d| {
-                                        view! { <p class="text-muted mb-4">{d.clone()}</p> }
-                                    })}
+                                    <RepoHeader
+                                        owner={username()}
+                                        name={reponame()}
+                                        is_private={false}
+                                        desc={meta.description}
+                                        link_to={Some(format!("/{}/{}", username(), reponame()))}
+                                    />
                                     <BranchSelector
                                         owner={username()}
                                         name={reponame()}
