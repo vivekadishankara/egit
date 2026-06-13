@@ -20,83 +20,51 @@ fn get_ssh_url(owner: &str, name: &str) -> String {
     format!("git@localhost:{}/{}.git", owner, name)
 }
 
-fn copy_to_clipboard(url: &str) {
-    #[cfg(feature = "hydrate")]
-    if let Some(window) = web_sys::window() {
-        let clipboard = window.navigator().clipboard();
-        let _ = clipboard.write_text(url);
-    }
-}
-
 #[component]
 pub fn CloneButton(owner: String, name: String) -> impl IntoView {
-    let active_tab = RwSignal::new("http");
-    let http_url = RwSignal::new(String::new());
-    let ssh_url = RwSignal::new(String::new());
+    let http_url = get_http_url(&owner, &name);
+    let ssh_url = get_ssh_url(&owner, &name);
+    let http_id = format!("clone-http-{}-{}", owner, name);
+    let ssh_id = format!("clone-ssh-{}-{}", owner, name);
 
-    let ensure_urls = move || {
-        if http_url.get().is_empty() {
-            http_url.set(get_http_url(&owner, &name));
-            ssh_url.set(get_ssh_url(&owner, &name));
-        }
-    };
+    // CSS to show/hide tab content based on radio state
+    let style_css = format!(
+        "#{h}:checked ~ .clone-http-content {{ display: flex; }} \
+         #{h}:checked ~ .clone-ssh-content {{ display: none; }} \
+         #{s}:checked ~ .clone-http-content {{ display: none; }} \
+         #{s}:checked ~ .clone-ssh-content {{ display: flex; }}",
+        h = http_id, s = ssh_id
+    );
 
     view! {
-        <div class="relative inline-block">
         <details class="relative inline-block">
-            <summary
-                class="text-sm px-3 py-1.5 rounded-md border border-theme bg-surface-secondary text-text cursor-pointer list-none"
-                on:click=move |_| ensure_urls()
-            >
+            <summary class="text-sm px-3 py-1.5 rounded-md border border-theme bg-surface-secondary text-text cursor-pointer list-none">
                 "Clone"
                 <span class="ml-1 text-xs text-muted">"▼"</span>
             </summary>
-            <div class="absolute top-full left-0 mt-0.5 rounded-md border border-theme bg-surface shadow-lg z-10 min-w-[320px]">
+            <div class="absolute top-full left-0 mt-0.5 rounded-md border border-theme bg-surface shadow-lg z-10 min-w-[320px] bg-surface">
+                <style>{style_css}</style>
+                <input type="radio" name="clone-tab" id={http_id.clone()} checked style="display:none" />
+                <input type="radio" name="clone-tab" id={ssh_id.clone()} style="display:none" />
                 <div class="flex border-b border-theme">
-                    <button
-                        class="flex-1 px-3 py-2 text-sm cursor-pointer transition-colors"
-                        class:border-b-2={true}
-                        class:border-accent={move || active_tab.get() == "http"}
-                        class:border-transparent={move || active_tab.get() != "http"}
-                        class:text-accent={move || active_tab.get() == "http"}
-                        class:text-muted={move || active_tab.get() != "http"}
-                        on:click=move |_| active_tab.set("http")
-                    >
+                    <label for={http_id.clone()} class="flex-1 px-3 py-2 text-sm cursor-pointer border-b-2 border-accent text-accent text-center">
                         "HTTP"
-                    </button>
-                    <button
-                        class="flex-1 px-3 py-2 text-sm cursor-pointer transition-colors"
-                        class:border-b-2={true}
-                        class:border-accent={move || active_tab.get() == "ssh"}
-                        class:border-transparent={move || active_tab.get() != "ssh"}
-                        class:text-accent={move || active_tab.get() == "ssh"}
-                        class:text-muted={move || active_tab.get() != "ssh"}
-                        on:click=move |_| active_tab.set("ssh")
-                    >
+                    </label>
+                    <label for={ssh_id.clone()} class="flex-1 px-3 py-2 text-sm cursor-pointer border-b-2 border-transparent text-muted text-center">
                         "SSH"
-                    </button>
+                    </label>
                 </div>
-                <div class="p-3">
-                    <div class="flex items-center gap-2">
-                        <input
-                            type="text"
-                            class="input flex-1"
-                            readonly
-                            value={move || if active_tab.get() == "http" { http_url.get() } else { ssh_url.get() }}
-                        />
-                        <button
-                            class="btn-secondary text-sm !px-3 !py-1.5"
-                            on:click=move |_| {
-                                let url = if active_tab.get() == "http" { http_url.get() } else { ssh_url.get() };
-                                copy_to_clipboard(&url);
-                            }
-                        >
-                            "Copy"
-                        </button>
+                <div class="p-3 clone-http-content" style="display:flex">
+                    <div class="flex items-center gap-2 w-full">
+                        <input type="text" class="input flex-1" readonly value=http_url />
+                    </div>
+                </div>
+                <div class="p-3 clone-ssh-content" style="display:none">
+                    <div class="flex items-center gap-2 w-full">
+                        <input type="text" class="input flex-1" readonly value=ssh_url />
                     </div>
                 </div>
             </div>
         </details>
-        </div>
     }
 }
