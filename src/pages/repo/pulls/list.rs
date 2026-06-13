@@ -136,6 +136,12 @@ pub fn PullListPage() -> impl IntoView {
                                         <div class="w-48 shrink-0">
                                             <div class="flex flex-col gap-0.5">
                                                 <a
+                                                    href=format!("/{owner}/{name}/pulls/new")
+                                                    class="btn-primary text-center text-sm mb-2 no-underline"
+                                                >
+                                                    "New pull request"
+                                                </a>
+                                                <a
                                                     href=format!("/{owner}/{name}/pulls?status=open")
                                                     class=format!(
                                                         "flex items-center justify-between px-3 py-2 text-sm rounded transition-colors no-underline {}",
@@ -190,12 +196,6 @@ pub fn PullListPage() -> impl IntoView {
                                                                         <p class="text-muted text-sm">
                                                                             "No pull requests found."
                                                                         </p>
-                                                                        <a
-                                                                            href=format!("/{owner}/{name}/pulls/new")
-                                                                            class="btn-primary mt-4 inline-block no-underline"
-                                                                        >
-                                                                            "New pull request"
-                                                                        </a>
                                                                     </div>
                                                                 }.into_any()
                                                             } else {
