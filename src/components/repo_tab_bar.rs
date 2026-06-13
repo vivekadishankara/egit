@@ -126,6 +126,7 @@ pub fn RepoTabBar(
     default_branch: String,
     has_commits: bool,
     current_branch: String,
+    has_pull_requests: bool,
 ) -> impl IntoView {
     let branch = if current_branch.is_empty() {
         default_branch.clone()
@@ -189,6 +190,21 @@ pub fn RepoTabBar(
                             class={tab_class("commits")}
                         >
                             "Commits"
+                        </a>
+                    }.into_any()
+                }
+            })}
+            {has_pull_requests.then(|| {
+                if active == "pulls" {
+                    view! {
+                        <span class={tab_class("pulls")}>
+                            "Pull requests"
+                        </span>
+                    }.into_any()
+                } else {
+                    view! {
+                        <a href=format!("/{owner}/{name}/pulls") class={tab_class("pulls")}>
+                            "Pull requests"
                         </a>
                     }.into_any()
                 }

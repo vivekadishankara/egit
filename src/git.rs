@@ -451,3 +451,31 @@ pub fn get_commit_log(
 
     Ok(commits)
 }
+
+/// Get the diff between two branches for a pull request.
+pub fn get_pr_diff(
+    repo_base: &str,
+    username: &str,
+    reponame: &str,
+    head_branch: &str,
+    base_branch: &str,
+) -> anyhow::Result<String> {
+    let path = repo_path(repo_base, username, reponame);
+    
+    let output = std::process::Command::new("git")
+        .args([
+            "diff",
+            &format!("refs/heads/{base_branch}...refs/heads/{head_branch}"),
+        ])
+        .env("GIT_DIR", &path)
+        .output()?;
+    
+    if !output.status.success() {
+        anyhow::bail!(
+            "git diff failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+    
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}

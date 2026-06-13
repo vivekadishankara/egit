@@ -1,10 +1,12 @@
 use leptos::prelude::*;
+#[cfg(feature = "ssr")]
 use sqlx::PgPool;
 use time::OffsetDateTime;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone, sqlx::FromRow, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ssr", derive(sqlx::FromRow))]
 pub struct PullRequest {
     pub id: Uuid,
     pub repo_id: Uuid,
@@ -19,7 +21,8 @@ pub struct PullRequest {
     pub updated_at: OffsetDateTime,
 }
 
-#[derive(Debug, Clone, sqlx::FromRow, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "ssr", derive(sqlx::FromRow))]
 pub struct PullRequestDetail {
     pub id: Uuid,
     pub repo_id: Uuid,
@@ -209,4 +212,61 @@ pub async fn get_branch_list_for_pr(username: String, reponame: String) -> Resul
     let repo_base: String = expect_context::<String>();
     let branches = crate::git::list_branches(&repo_base, &username, &reponame);
     Ok(branches)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PullRequestCounts {
+    pub open: i64,
+    pub merged: i64,
+    pub closed: i64,
+}
+
+#[server(GetPullRequestCounts, "/api")]
+pub async fn get_pull_request_counts(repo_id: Uuid) -> Result<PullRequestCounts, ServerFnError> {
+    let pool = expect_context::<PgPool>();
+
+    let open = sqlx::query_scalar!(
+        "SELECT COUNT(*) FROM pull_requests WHERE repo_id = $1 AND status = 'open'",
+        repo_id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?
+    .unwrap_or(0);
+
+    let merged = sqlx::query_scalar!(
+        "SELECT COUNT(*) FROM pull_requests WHERE repo_id = $1 AND status = 'merged'",
+        repo_id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?
+    .unwrap_or(0);
+
+    let closed = sqlx::query_scalar!(
+        "SELECT COUNT(*) FROM pull_requests WHERE repo_id = $1 AND status = 'closed'",
+        repo_id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?
+    .unwrap_or(0);
+
+    Ok(PullRequestCounts { open, merged, closed })
+}
+
+#[server(HasPullRequests, "/api")]
+pub async fn has_pull_requests(repo_id: Uuid) -> Result<bool, ServerFnError> {
+    let pool = expect_context::<PgPool>();
+
+    let count = sqlx::query_scalar!(
+        "SELECT COUNT(*) FROM pull_requests WHERE repo_id = $1",
+        repo_id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?
+    .unwrap_or(0);
+
+    Ok(count > 0)
 }

@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::components::markdown::Markdown;
 use crate::components::repo_tab_bar::{BranchSelector, RepoTabBar};
+use crate::server::prs::get_pull_request_counts;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoInfo {
@@ -14,6 +16,8 @@ pub struct RepoInfo {
     pub readme_content: Option<String>,
     pub has_commits: bool,
     pub default_branch: String,
+    pub repo_id: Uuid,
+    pub has_pull_requests: bool,
 }
 
 #[server(GetRepoOverview, "/api")]
@@ -29,7 +33,7 @@ pub async fn get_repo_overview(
 
     let row = sqlx::query!(
         r#"
-        SELECT r.name, r.description, r.is_private, u.username as owner_name
+        SELECT r.id, r.name, r.description, r.is_private, u.username as owner_name
         FROM repositories r
         JOIN users u ON u.id = r.owner_id
         WHERE r.name = $1 AND u.username = $2
@@ -50,6 +54,15 @@ pub async fn get_repo_overview(
     let default_branch = crate::git::get_default_branch(&repo_base, &username, &reponame)
         .unwrap_or_else(|| "HEAD".to_string());
 
+    let pr_count = sqlx::query_scalar!(
+        "SELECT COUNT(*) FROM pull_requests WHERE repo_id = $1",
+        row.id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?
+    .unwrap_or(0);
+
     Ok(RepoInfo {
         name: row.name,
         description: row.description,
@@ -58,6 +71,8 @@ pub async fn get_repo_overview(
         readme_content,
         has_commits,
         default_branch,
+        repo_id: row.id,
+        has_pull_requests: pr_count > 0,
     })
 }
 
@@ -89,6 +104,21 @@ pub fn RepoOverviewPage() -> impl IntoView {
         |(u, r, b)| async move { get_repo_overview(u, r, b).await },
     );
 
+    let repo_id = move || {
+        repo.get().and_then(|r| r.ok()).map(|info| info.repo_id)
+    };
+
+    let pr_counts = Resource::new(
+        move || repo_id(),
+        |id| async move {
+            if let Some(id) = id {
+                get_pull_request_counts(id).await.ok()
+            } else {
+                None
+            }
+        },
+    );
+
     view! {
         <div class="container">
             <Suspense fallback=|| view! { <p class="text-muted">"Loading..."</p> }>
@@ -101,6 +131,7 @@ pub fn RepoOverviewPage() -> impl IntoView {
                             let readme = info.readme_content.clone();
                             let is_private = info.is_private;
                             let has_commits = info.has_commits;
+                            let has_pull_requests = info.has_pull_requests;
                             let default_branch = info.default_branch.clone();
 
                             view! {
@@ -142,45 +173,82 @@ pub fn RepoOverviewPage() -> impl IntoView {
                                         default_branch={default_branch.clone()}
                                         has_commits={has_commits}
                                         current_branch={branch().unwrap_or_default()}
+                                        has_pull_requests={has_pull_requests}
                                     />
 
-                                    {match &readme {
-                                        Some(content) => {
-                                            view! {
-                                                <div class="card">
-                                                    <div class="text-sm font-medium text-muted mb-2 border-b border-theme pb-2">
-                                                        "README.md"
-                                                    </div>
-                                                    <Markdown content=content.clone()/>
+                                    <div class="flex gap-6">
+                                        <div class="w-64 shrink-0">
+                                            <div class="card mb-6">
+                                                <div class="px-4 py-3 border-b border-theme">
+                                                    <h2 class="font-medium text-muted text-sm">"Pull Requests"</h2>
                                                 </div>
-                                            }.into_any()
-                                        }
-                                        None => {
-                                            if has_commits {
-                                                view! {
-                                                    <div class="card">
-                                                        <p class="text-muted text-sm">
-                                                            "No README found for this repository."
-                                                        </p>
-                                                        <a
-                                                            href=format!("/{owner}/{name}/tree/{default_branch}")
-                                                            class="btn-primary mt-4 inline-block no-underline"
-                                                        >
-                                                            "Browse files"
-                                                        </a>
-                                                    </div>
-                                                }.into_any()
-                                            } else {
-                                                view! {
-                                                    <div class="card">
-                                                        <p class="text-muted text-sm">
-                                                            "This repository is empty."
-                                                        </p>
-                                                    </div>
-                                                }.into_any()
-                                            }
-                                        }
-                                    }}
+                                                <div class="p-2">
+                                                    <a href=format!("/{owner}/{name}/pulls/new") class="flex items-center gap-2 px-3 py-2 text-sm text-text hover:bg-surface-secondary rounded transition-colors">
+                                                        <span>"+"</span>
+                                                        <span>"New pull request"</span>
+                                                    </a>
+                                                    <a href=format!("/{owner}/{name}/pulls?status=open") class="flex items-center justify-between px-3 py-2 text-sm text-text hover:bg-surface-secondary rounded transition-colors">
+                                                        <span>"Open"</span>
+                                                        {move || pr_counts.get().map(|c| {
+                                                            view! { <span class="text-xs text-muted">{c.as_ref().map(|c| c.open.to_string()).unwrap_or_else(|| "0".to_string())}</span> }
+                                                        })}
+                                                    </a>
+                                                    <a href=format!("/{owner}/{name}/pulls?status=merged") class="flex items-center justify-between px-3 py-2 text-sm text-text hover:bg-surface-secondary rounded transition-colors">
+                                                        <span>"Merged"</span>
+                                                        {move || pr_counts.get().map(|c| {
+                                                            view! { <span class="text-xs text-muted">{c.as_ref().map(|c| c.merged.to_string()).unwrap_or_else(|| "0".to_string())}</span> }
+                                                        })}
+                                                    </a>
+                                                    <a href=format!("/{owner}/{name}/pulls?status=closed") class="flex items-center justify-between px-3 py-2 text-sm text-text hover:bg-surface-secondary rounded transition-colors">
+                                                        <span>"Closed"</span>
+                                                        {move || pr_counts.get().map(|c| {
+                                                            view! { <span class="text-xs text-muted">{c.as_ref().map(|c| c.closed.to_string()).unwrap_or_else(|| "0".to_string())}</span> }
+                                                        })}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex-1">
+                                            {match &readme {
+                                                Some(content) => {
+                                                    view! {
+                                                        <div class="card">
+                                                            <div class="text-sm font-medium text-muted mb-2 border-b border-theme pb-2">
+                                                                "README.md"
+                                                            </div>
+                                                            <Markdown content=content.clone()/>
+                                                        </div>
+                                                    }.into_any()
+                                                }
+                                                None => {
+                                                    if has_commits {
+                                                        view! {
+                                                            <div class="card">
+                                                                <p class="text-muted text-sm">
+                                                                    "No README found for this repository."
+                                                                </p>
+                                                                <a
+                                                                    href=format!("/{owner}/{name}/tree/{default_branch}")
+                                                                    class="btn-primary mt-4 inline-block no-underline"
+                                                                >
+                                                                    "Browse files"
+                                                                </a>
+                                                            </div>
+                                                        }.into_any()
+                                                    } else {
+                                                        view! {
+                                                            <div class="card">
+                                                                <p class="text-muted text-sm">
+                                                                    "This repository is empty."
+                                                                </p>
+                                                            </div>
+                                                        }.into_any()
+                                                    }
+                                                }
+                                            }}
+                                        </div>
+                                    </div>
                                 </div>
                             }.into_any()
                         }

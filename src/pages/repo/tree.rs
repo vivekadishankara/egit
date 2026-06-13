@@ -125,6 +125,7 @@ pub fn TreePage() -> impl IntoView {
                                         default_branch={meta.default_branch}
                                         has_commits={meta.has_commits}
                                         current_branch={branch()}
+                                        has_pull_requests={false}
                                     />
                                 </>
                             }.into_any()
