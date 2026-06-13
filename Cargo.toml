@@ -72,8 +72,8 @@ dotenvy = { version = "0.15", optional = true }
 http = "1"
 
 # WASM
-wasm-bindgen = { version = "=0.2.100", optional = true }
-web-sys = { version = "0.3", optional = true, features = ["Window", "Document", "HtmlDocument", "HtmlElement", "DomStringMap", "HtmlSelectElement", "HtmlFormElement", "Clipboard", "Navigator", "Location"] }
+wasm-bindgen = { version = "0.2.125", optional = true }
+web-sys = { version = "0.3", optional = true, features = ["Window", "Document", "HtmlDocument", "HtmlElement", "HtmlDetailsElement", "DomStringMap", "HtmlSelectElement", "HtmlFormElement", "Clipboard", "Navigator", "Location", "Event", "Node", "EventTarget", "MouseEvent"] }
 console_error_panic_hook = { version = "0.1", optional = true }
 
 [features]
