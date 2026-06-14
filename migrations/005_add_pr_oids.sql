@@ -1,0 +1,2 @@
+ALTER TABLE pull_requests ADD COLUMN IF NOT EXISTS head_oid TEXT;
+ALTER TABLE pull_requests ADD COLUMN IF NOT EXISTS base_oid TEXT;

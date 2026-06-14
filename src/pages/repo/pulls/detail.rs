@@ -95,18 +95,10 @@ pub fn PullDetailPage() -> impl IntoView {
     );
 
     let diff = Resource::new(
-        move || (pr_id(), username(), reponame()),
-        |(id, u, r)| async move {
+        move || pr_id(),
+        |id| async move {
             match id {
-                Some(pr_id) => {
-                    if let Ok(detail) = get_pull_request(pr_id).await {
-                        get_pr_diff(u, r, detail.head_branch, detail.base_branch)
-                            .await
-                            .ok()
-                    } else {
-                        None
-                    }
-                }
+                Some(pr_id) => get_pr_diff(pr_id).await.ok(),
                 None => None,
             }
         },

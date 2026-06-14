@@ -450,21 +450,18 @@ pub fn get_commit_log(
     Ok(commits)
 }
 
-/// Get the diff between two branches for a pull request.
+/// Get the diff between two commits for a pull request.
 pub fn get_pr_diff(
     repo_base: &str,
     username: &str,
     reponame: &str,
-    head_branch: &str,
-    base_branch: &str,
+    head_oid: &str,
+    base_oid: &str,
 ) -> anyhow::Result<Vec<DiffFile>> {
     let path = repo_path(repo_base, username, reponame);
     
     let output = std::process::Command::new("git")
-        .args([
-            "diff",
-            &format!("refs/heads/{base_branch}...refs/heads/{head_branch}"),
-        ])
+        .args(["diff", &format!("{base_oid}...{head_oid}")])
         .env("GIT_DIR", &path)
         .output()?;
     

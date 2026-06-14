@@ -16,6 +16,8 @@ pub struct PullRequest {
     pub body: Option<String>,
     pub head_branch: String,
     pub base_branch: String,
+    pub head_oid: Option<String>,
+    pub base_oid: Option<String>,
     pub status: String,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -34,6 +36,8 @@ pub struct PullRequestDetail {
     pub body: Option<String>,
     pub head_branch: String,
     pub base_branch: String,
+    pub head_oid: Option<String>,
+    pub base_oid: Option<String>,
     pub status: String,
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
@@ -53,6 +57,7 @@ pub async fn create_pull_request(
     use axum::http::HeaderMap;
 
     let pool = expect_context::<PgPool>();
+    let repo_base: String = expect_context::<String>();
     let headers: HeaderMap = leptos_axum::extract()
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
@@ -83,13 +88,37 @@ pub async fn create_pull_request(
         return Err(ServerFnError::new(msg));
     }
 
+    let repo_path = crate::git::repo_path(&repo_base, &username, &reponame);
+
+    let head_oid = std::process::Command::new("git")
+        .args(["rev-parse", &format!("refs/heads/{head_branch}")])
+        .env("GIT_DIR", &repo_path)
+        .output()
+        .map_err(|e| ServerFnError::new(format!("Failed to resolve head OID: {e}")))?;
+    let head_oid = if head_oid.status.success() {
+        Some(String::from_utf8_lossy(&head_oid.stdout).trim().to_string())
+    } else {
+        None
+    };
+
+    let base_oid = std::process::Command::new("git")
+        .args(["rev-parse", &format!("refs/heads/{base_branch}")])
+        .env("GIT_DIR", &repo_path)
+        .output()
+        .map_err(|e| ServerFnError::new(format!("Failed to resolve base OID: {e}")))?;
+    let base_oid = if base_oid.status.success() {
+        Some(String::from_utf8_lossy(&base_oid.stdout).trim().to_string())
+    } else {
+        None
+    };
+
     let pr_id = sqlx::query_scalar!(
         r#"
-        INSERT INTO pull_requests (repo_id, author_id, title, body, head_branch, base_branch, status)
-        VALUES ($1, $2, $3, $4, $5, $6, 'open')
+        INSERT INTO pull_requests (repo_id, author_id, title, body, head_branch, base_branch, head_oid, base_oid, status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'open')
         RETURNING id
         "#,
-        repo_id, session.user_id, title, body, head_branch, base_branch
+        repo_id, session.user_id, title, body, head_branch, base_branch, head_oid, base_oid
     )
     .fetch_one(&pool)
     .await
@@ -117,6 +146,8 @@ pub async fn list_pull_requests(repo_id: Uuid, status: Option<String>) -> Result
             pr.body,
             pr.head_branch,
             pr.base_branch,
+            pr.head_oid,
+            pr.base_oid,
             pr.status,
             pr.created_at,
             pr.updated_at
@@ -153,6 +184,8 @@ pub async fn get_pull_request(pr_id: Uuid) -> Result<PullRequestDetail, ServerFn
             pr.body,
             pr.head_branch,
             pr.base_branch,
+            pr.head_oid,
+            pr.base_oid,
             pr.status,
             pr.created_at,
             pr.updated_at
@@ -372,14 +405,29 @@ pub async fn get_branch_list_for_pr(username: String, reponame: String) -> Resul
 }
 
 #[server(GetPrDiff, "/api")]
-pub async fn get_pr_diff(
-    username: String,
-    reponame: String,
-    head_branch: String,
-    base_branch: String,
-) -> Result<Vec<crate::diff::DiffFile>, ServerFnError> {
+pub async fn get_pr_diff(pr_id: Uuid) -> Result<Vec<crate::diff::DiffFile>, ServerFnError> {
+    let pool = expect_context::<PgPool>();
     let repo_base: String = expect_context::<String>();
-    crate::git::get_pr_diff(&repo_base, &username, &reponame, &head_branch, &base_branch)
+
+    let pr = sqlx::query!(
+        r#"
+        SELECT pr.head_branch, pr.base_branch, pr.head_oid, pr.base_oid,
+               r.name as repo_name, u.username as owner_name
+        FROM pull_requests pr
+        JOIN repositories r ON r.id = pr.repo_id
+        JOIN users u ON u.id = r.owner_id
+        WHERE pr.id = $1
+        "#,
+        pr_id
+    )
+    .fetch_one(&pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?;
+
+    let head_oid = pr.head_oid.as_deref().unwrap_or(&pr.head_branch);
+    let base_oid = pr.base_oid.as_deref().unwrap_or(&pr.base_branch);
+
+    crate::git::get_pr_diff(&repo_base, &pr.owner_name, &pr.repo_name, head_oid, base_oid)
         .map_err(|e| ServerFnError::new(format!("Failed to get diff: {e}")))
 }
 
