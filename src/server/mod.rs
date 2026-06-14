@@ -1,2 +1,20 @@
+pub mod auth;
 pub mod prs;
 pub mod repos;
+
+#[cfg(feature = "ssr")]
+pub mod git;
+#[cfg(feature = "ssr")]
+pub mod db;
+#[cfg(feature = "ssr")]
+pub mod error;
+#[cfg(feature = "ssr")]
+pub mod git_routes;
+#[cfg(feature = "ssr")]
+pub mod middleware;
+#[cfg(feature = "ssr")]
+pub mod session;
+#[cfg(feature = "ssr")]
+pub mod shell;
+#[cfg(feature = "ssr")]
+pub mod syntax;

@@ -5,7 +5,7 @@ pub async fn delete_repo(
     username: String,
     reponame: String,
 ) -> Result<(), ServerFnError> {
-    use crate::auth;
+    use crate::server::session;
     use axum::http::HeaderMap;
     use sqlx::PgPool;
     use std::path::PathBuf;
@@ -16,8 +16,8 @@ pub async fn delete_repo(
     let headers: HeaderMap = leptos_axum::extract()
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
-    let session_id = auth::session_id_from_headers(&headers);
-    let session = auth::get_session(&pool, session_id.as_deref())
+    let session_id = session::session_id_from_headers(&headers);
+    let session = session::get_session(&pool, session_id.as_deref())
         .await
         .ok_or_else(|| ServerFnError::new("Not logged in"))?;
 

@@ -1,19 +1,15 @@
-#![cfg_attr(not(feature = "ssr"), allow(unused_imports, dead_code))]
 use std::sync::OnceLock;
 
-#[cfg(feature = "ssr")]
 pub fn syntax_set() -> &'static syntect::parsing::SyntaxSet {
     static SS: OnceLock<syntect::parsing::SyntaxSet> = OnceLock::new();
     SS.get_or_init(|| syntect::parsing::SyntaxSet::load_defaults_newlines())
 }
 
-#[cfg(feature = "ssr")]
 pub fn theme_set() -> &'static syntect::highlighting::ThemeSet {
     static TS: OnceLock<syntect::highlighting::ThemeSet> = OnceLock::new();
     TS.get_or_init(|| syntect::highlighting::ThemeSet::load_defaults())
 }
 
-#[cfg(feature = "ssr")]
 pub fn highlight(code: &str, extension: &str) -> String {
     let ss = syntax_set();
     let ts = theme_set();
@@ -31,7 +27,6 @@ pub fn highlight(code: &str, extension: &str) -> String {
         .unwrap_or_else(|e| format!("<pre>Highlight error: {e}</pre>"))
 }
 
-#[cfg(feature = "ssr")]
 pub fn highlight_line(code: &str, extension: &str) -> String {
     let ss = syntax_set();
     let ts = theme_set();

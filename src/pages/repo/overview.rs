@@ -48,12 +48,12 @@ pub async fn get_repo_overview(
     .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?
     .ok_or_else(|| ServerFnError::new("Repository not found"))?;
 
-    let readme_content = crate::git::read_readme(&repo_base, &username, &reponame, branch.as_deref())
+    let readme_content = crate::server::git::read_readme(&repo_base, &username, &reponame, branch.as_deref())
         .ok()
         .flatten();
 
-    let has_commits = crate::git::has_commits(&repo_base, &username, &reponame);
-    let default_branch = crate::git::get_default_branch(&repo_base, &username, &reponame)
+    let has_commits = crate::server::git::has_commits(&repo_base, &username, &reponame);
+    let default_branch = crate::server::git::get_default_branch(&repo_base, &username, &reponame)
         .unwrap_or_else(|| "HEAD".to_string());
 
     let pr_count = sqlx::query_scalar!(

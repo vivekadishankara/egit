@@ -53,7 +53,7 @@ pub async fn create_pull_request(
     username: String,
     reponame: String,
 ) -> Result<Uuid, ServerFnError> {
-    use crate::auth;
+    use crate::server::session;
     use axum::http::HeaderMap;
 
     let pool = expect_context::<PgPool>();
@@ -61,8 +61,8 @@ pub async fn create_pull_request(
     let headers: HeaderMap = leptos_axum::extract()
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
-    let session_id = auth::session_id_from_headers(&headers);
-    let session = auth::get_session(&pool, session_id.as_deref())
+    let session_id = session::session_id_from_headers(&headers);
+    let session = session::get_session(&pool, session_id.as_deref())
         .await
         .ok_or_else(|| ServerFnError::new("Not logged in"))?;
 
@@ -88,7 +88,7 @@ pub async fn create_pull_request(
         return Err(ServerFnError::new(msg));
     }
 
-    let repo_path = crate::git::repo_path(&repo_base, &username, &reponame);
+    let repo_path = crate::server::git::repo_path(&repo_base, &username, &reponame);
 
     let head_oid = std::process::Command::new("git")
         .args(["rev-parse", &format!("refs/heads/{head_branch}")])
@@ -225,7 +225,7 @@ pub async fn get_repo_id_by_name(username: String, reponame: String) -> Result<U
 
 #[server]
 pub async fn merge_pull_request(pr_id: Uuid) -> Result<(), ServerFnError> {
-    use crate::auth;
+    use crate::server::session;
     use axum::http::HeaderMap;
 
     let pool = expect_context::<PgPool>();
@@ -233,8 +233,8 @@ pub async fn merge_pull_request(pr_id: Uuid) -> Result<(), ServerFnError> {
     let headers: HeaderMap = leptos_axum::extract()
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
-    let session_id = auth::session_id_from_headers(&headers);
-    let session = auth::get_session(&pool, session_id.as_deref())
+    let session_id = session::session_id_from_headers(&headers);
+    let session = session::get_session(&pool, session_id.as_deref())
         .await
         .ok_or_else(|| ServerFnError::new("Not logged in"))?;
 
@@ -258,7 +258,7 @@ pub async fn merge_pull_request(pr_id: Uuid) -> Result<(), ServerFnError> {
         return Err(ServerFnError::new("Only the author can merge this pull request"));
     }
 
-    let repo_path = crate::git::repo_path(&repo_base, &pr.owner_name, &pr.repo_name);
+    let repo_path = crate::server::git::repo_path(&repo_base, &pr.owner_name, &pr.repo_name);
     let base_ref = format!("refs/heads/{}", pr.base_branch);
     let head_ref = format!("refs/heads/{}", pr.head_branch);
 
@@ -353,15 +353,15 @@ pub async fn merge_pull_request(pr_id: Uuid) -> Result<(), ServerFnError> {
 
 #[server]
 pub async fn close_pull_request(pr_id: Uuid) -> Result<(), ServerFnError> {
-    use crate::auth;
+    use crate::server::session;
     use axum::http::HeaderMap;
 
     let pool = expect_context::<PgPool>();
     let headers: HeaderMap = leptos_axum::extract()
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
-    let session_id = auth::session_id_from_headers(&headers);
-    let session = auth::get_session(&pool, session_id.as_deref())
+    let session_id = session::session_id_from_headers(&headers);
+    let session = session::get_session(&pool, session_id.as_deref())
         .await
         .ok_or_else(|| ServerFnError::new("Not logged in"))?;
 
@@ -400,7 +400,7 @@ pub async fn close_pull_request(pr_id: Uuid) -> Result<(), ServerFnError> {
 #[server]
 pub async fn get_branch_list_for_pr(username: String, reponame: String) -> Result<Vec<String>, ServerFnError> {
     let repo_base: String = expect_context::<String>();
-    let branches = crate::git::list_branches(&repo_base, &username, &reponame);
+    let branches = crate::server::git::list_branches(&repo_base, &username, &reponame);
     Ok(branches)
 }
 
@@ -427,7 +427,7 @@ pub async fn get_pr_diff(pr_id: Uuid) -> Result<Vec<crate::diff::DiffFile>, Serv
     let head_oid = pr.head_oid.as_deref().unwrap_or(&pr.head_branch);
     let base_oid = pr.base_oid.as_deref().unwrap_or(&pr.base_branch);
 
-    crate::git::get_pr_diff(&repo_base, &pr.owner_name, &pr.repo_name, head_oid, base_oid)
+    crate::server::git::get_pr_diff(&repo_base, &pr.owner_name, &pr.repo_name, head_oid, base_oid)
         .map_err(|e| ServerFnError::new(format!("Failed to get diff: {e}")))
 }
 

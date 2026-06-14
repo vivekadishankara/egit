@@ -21,15 +21,11 @@ pub struct ServiceQuery {
     service: Option<String>,
 }
 
-/// Build the on-disk path to a bare repository from URL components.
-/// The `reponame` may include a `.git` suffix (e.g. `myrepo.git`);
-/// we strip it to look up the correct on-disk path.
 fn repo_path(base: &str, username: &str, reponame: &str) -> PathBuf {
     let name = reponame.strip_suffix(".git").unwrap_or(reponame);
     PathBuf::from(base).join(username).join(format!("{}.git", name))
 }
 
-/// Common Git HTTP no-cache headers.
 fn git_headers(content_type: &str) -> HeaderMap {
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -48,8 +44,6 @@ fn git_headers(content_type: &str) -> HeaderMap {
     headers
 }
 
-/// GET /:username/:reponame.git/info/refs?service=git-upload-pack
-/// GET /:username/:reponame.git/info/refs?service=git-receive-pack
 pub async fn handle_info_refs(
     Extension(state): Extension<GitSmartHttpState>,
     Path((username, reponame)): Path<(String, String)>,
@@ -111,27 +105,20 @@ pub async fn handle_info_refs(
         }
     };
 
-    // Build response: pkt-line "# service={cmd}\n" + flush packet + ref advertisement
-    // pkt-len = 4 (hex prefix) + 10 ("# service=") + cmd.len() + 1 ("\n")
     let pkt_len = 15 + cmd.len();
     let service_pkt = format!("{:04x}# service={}\n", pkt_len, cmd);
     let mut response = service_pkt.into_bytes();
     response.extend_from_slice(b"0000");
     response.extend_from_slice(&output);
 
-    // Inject symref=HEAD:refs/heads/main when git-upload-pack doesn't advertise it
-    // (empty repo with unborn HEAD).
     if !response.windows(12).any(|w| w == b"symref=HEAD:") {
         let needle = b"capabilities^{}";
         if let Some(cap_pos) = response.windows(needle.len()).position(|w| w == needle) {
-            // Find the \n that ends the null-OID pkt-line (it's after cap_pos)
             let tail = &response[cap_pos..];
             if let Some(eol_rel) = tail.iter().position(|&b| b == b'\n') {
                 let eol = cap_pos + eol_rel;
                 let symref = b" symref=HEAD:refs/heads/main";
 
-                // Rebuild this pkt-line with the symref injected
-                // The pkt-line starts 4 bytes (len) + 41 (null-oid + space) before cap_pos
                 if cap_pos >= 45 {
                     let line_start = cap_pos - 45;
                     let old_len_str = std::str::from_utf8(&response[line_start..line_start + 4])
@@ -140,12 +127,10 @@ pub async fn handle_info_refs(
                     let new_len = old_len + symref.len();
                     let new_len_str = format!("{:04x}", new_len);
 
-                    // Slice out the old pkt-line and replace with a new one
-                    let old_line = &response[line_start..eol + 1]; // include the \n
+                    let old_line = &response[line_start..eol + 1];
                     let mut new_line = Vec::with_capacity(new_len + 4 + symref.len());
                     new_line.extend_from_slice(new_len_str.as_bytes());
-                    // everything between the 4-byte len and the \n, with symref before \n
-                    new_line.extend_from_slice(&old_line[4..old_line.len() - 1]); // exclude len prefix and \n
+                    new_line.extend_from_slice(&old_line[4..old_line.len() - 1]);
                     new_line.extend_from_slice(symref);
                     new_line.push(b'\n');
 
@@ -158,7 +143,6 @@ pub async fn handle_info_refs(
     (git_headers(content_type), response).into_response()
 }
 
-/// POST /:username/:reponame.git/git-upload-pack
 pub async fn handle_upload_pack(
     Extension(state): Extension<GitSmartHttpState>,
     Path((username, reponame)): Path<(String, String)>,
@@ -177,7 +161,6 @@ pub async fn handle_upload_pack(
     }
 }
 
-/// POST /:username/:reponame.git/git-receive-pack
 pub async fn handle_receive_pack(
     Extension(state): Extension<GitSmartHttpState>,
     Path((username, reponame)): Path<(String, String)>,
@@ -206,8 +189,6 @@ pub async fn handle_receive_pack(
     }
 }
 
-/// Run a Git `--stateless-rpc` subcommand, piping `input` to its stdin
-/// and returning the captured stdout on success.
 async fn run_git_stateless(
     cmd: &str,
     repo_path: &PathBuf,
@@ -263,7 +244,6 @@ async fn run_git_stateless(
     Ok(output.stdout)
 }
 
-/// Verify HTTP Basic Auth credentials against the users table.
 async fn verify_basic_auth(pool: &PgPool, headers: &HeaderMap) -> bool {
     let auth_header = match headers.get(http::header::AUTHORIZATION).and_then(|v| v.to_str().ok()) {
         Some(v) => v,

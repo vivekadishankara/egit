@@ -15,8 +15,8 @@ pub async fn create_repo(
     description: Option<String>,
     is_private: bool,
 ) -> Result<RepoCreated, ServerFnError> {
-    use crate::auth;
-    use crate::git;
+    use crate::server::session;
+    use crate::server::git;
     use axum::http::HeaderMap;
     use sqlx::PgPool;
     use std::path::PathBuf;
@@ -27,8 +27,8 @@ pub async fn create_repo(
     let headers: HeaderMap = leptos_axum::extract()
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
-    let session_id = auth::session_id_from_headers(&headers);
-    let session = auth::get_session(&pool, session_id.as_deref())
+    let session_id = session::session_id_from_headers(&headers);
+    let session = session::get_session(&pool, session_id.as_deref())
         .await
         .ok_or_else(|| ServerFnError::new("Not logged in"))?;
 

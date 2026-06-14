@@ -26,7 +26,7 @@ pub async fn get_commit_detail(
     commit_id: String,
 ) -> Result<CommitDetail, ServerFnError> {
     let repo_base: String = expect_context::<String>();
-    let raw = crate::git::get_commit_detail(&repo_base, &username, &reponame, &commit_id)
+    let raw = crate::server::git::get_commit_detail(&repo_base, &username, &reponame, &commit_id)
         .map_err(|e| ServerFnError::new(format!("Failed to read commit: {e}")))?;
     Ok(CommitDetail {
         id: raw.id,

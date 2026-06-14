@@ -24,7 +24,7 @@ pub async fn get_commit_log(
     revision: String,
 ) -> Result<Vec<CommitLogEntry>, ServerFnError> {
     let repo_base: String = expect_context::<String>();
-    let raw = crate::git::get_commit_log(&repo_base, &username, &reponame, &revision)
+    let raw = crate::server::git::get_commit_log(&repo_base, &username, &reponame, &revision)
         .map_err(|e| ServerFnError::new(format!("Failed to read commit log: {e}")))?;
     Ok(raw
         .into_iter()

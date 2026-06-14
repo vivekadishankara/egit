@@ -21,7 +21,7 @@ pub struct UserProfile {
 
 #[server(GetUserProfile, "/api")]
 pub async fn get_user_profile(username: String) -> Result<UserProfile, ServerFnError> {
-    use crate::auth;
+    use crate::server::session;
     use axum::http::HeaderMap;
     use sqlx::PgPool;
 
@@ -43,8 +43,8 @@ pub async fn get_user_profile(username: String) -> Result<UserProfile, ServerFnE
     let headers: HeaderMap = leptos_axum::extract()
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
-    let session_id = auth::session_id_from_headers(&headers);
-    let session = auth::get_session(&pool, session_id.as_deref()).await;
+    let session_id = session::session_id_from_headers(&headers);
+    let session = session::get_session(&pool, session_id.as_deref()).await;
     let is_owner = session
         .as_ref()
         .is_some_and(|s| s.username == username);
@@ -93,7 +93,7 @@ pub async fn get_user_profile(username: String) -> Result<UserProfile, ServerFnE
         repos: rows
             .into_iter()
             .map(|r| {
-                let default_branch = crate::git::get_default_branch(
+                let default_branch = crate::server::git::get_default_branch(
                     &repo_base,
                     &repo_username,
                     &r.name,

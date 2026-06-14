@@ -18,7 +18,7 @@ pub struct BlobData {
 
 #[cfg(feature = "ssr")]
 fn highlight(code: &str, extension: &str) -> String {
-    crate::syntax::highlight(code, extension)
+    crate::server::syntax::highlight(code, extension)
 }
 
 #[server(GetBlobContent, "/api")]
@@ -30,7 +30,7 @@ pub async fn get_blob_content(
 ) -> Result<BlobData, ServerFnError> {
     let repo_base: String = expect_context::<String>();
 
-    let (data, ext) = crate::git::read_file(&repo_base, &username, &reponame, &revision, &path)
+    let (data, ext) = crate::server::git::read_file(&repo_base, &username, &reponame, &revision, &path)
         .map_err(|e| ServerFnError::new(format!("Failed to read file: {e}")))?;
 
     let is_binary = data.contains(&0);

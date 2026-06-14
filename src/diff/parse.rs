@@ -1,42 +1,5 @@
-use serde::{Deserialize, Serialize};
+use super::types::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DiffFile {
-    pub old_path: String,
-    pub new_path: String,
-    pub status: String,
-    pub extension: String,
-    pub hunks: Vec<DiffHunk>,
-    pub stats: DiffStats,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DiffStats {
-    pub additions: u32,
-    pub deletions: u32,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DiffHunk {
-    pub old_start: u32,
-    pub old_lines: u32,
-    pub new_start: u32,
-    pub new_lines: u32,
-    pub header: String,
-    pub lines: Vec<DiffLine>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DiffLine {
-    pub line_type: String,
-    pub old_lineno: Option<u32>,
-    pub new_lineno: Option<u32>,
-    pub content: String,
-    pub highlighted: String,
-    pub inline_diff: Option<String>,
-}
-
-#[cfg(feature = "ssr")]
 pub fn parse_diff(raw: &str) -> Vec<DiffFile> {
     let mut files: Vec<DiffFile> = Vec::new();
     let mut current_file: Option<DiffFileBuilder> = None;
@@ -63,7 +26,6 @@ pub fn parse_diff(raw: &str) -> Vec<DiffFile> {
     files
 }
 
-#[cfg(feature = "ssr")]
 struct DiffFileBuilder {
     old_path: String,
     new_path: String,
@@ -74,7 +36,6 @@ struct DiffFileBuilder {
     is_binary: bool,
 }
 
-#[cfg(feature = "ssr")]
 impl DiffFileBuilder {
     fn new(header: &str) -> Self {
         let (old, new) = parse_diff_git_header(header);
@@ -176,7 +137,6 @@ impl DiffFileBuilder {
             hunks.push(hunk);
         }
 
-        // Apply inline word diffs to matched +/- pairs within each hunk
         for hunk in &mut hunks {
             apply_inline_word_diff(&mut hunk.lines);
         }
@@ -195,7 +155,6 @@ impl DiffFileBuilder {
     }
 }
 
-#[cfg(feature = "ssr")]
 struct DiffHunkBuilder {
     old_start: u32,
     old_lines: u32,
@@ -205,7 +164,6 @@ struct DiffHunkBuilder {
     lines: Vec<(String, String)>,
 }
 
-#[cfg(feature = "ssr")]
 impl DiffHunkBuilder {
     fn new(header_line: &str) -> Self {
         let (old_start, old_lines, new_start, new_lines) = parse_hunk_header(header_line);
@@ -294,7 +252,6 @@ impl DiffHunkBuilder {
     }
 }
 
-#[cfg(feature = "ssr")]
 fn parse_diff_git_header(line: &str) -> (String, String) {
     let rest = line.strip_prefix("diff --git ").unwrap_or(line);
     let parts: Vec<&str> = rest.split(' ').collect();
@@ -309,7 +266,6 @@ fn parse_diff_git_header(line: &str) -> (String, String) {
     (old, new)
 }
 
-#[cfg(feature = "ssr")]
 fn parse_hunk_header(line: &str) -> (u32, u32, u32, u32) {
     let rest = line
         .strip_prefix("@@ ")
@@ -327,7 +283,6 @@ fn parse_hunk_header(line: &str) -> (u32, u32, u32, u32) {
     (old_start, old_len, new_start, new_len)
 }
 
-#[cfg(feature = "ssr")]
 fn parse_range(part: &str) -> (u32, u32) {
     let part = if part.starts_with('-') || part.starts_with('+') {
         &part[1..]
@@ -342,7 +297,6 @@ fn parse_range(part: &str) -> (u32, u32) {
     }
 }
 
-#[cfg(feature = "ssr")]
 fn apply_inline_word_diff(lines: &mut Vec<DiffLine>) {
     let mut i = 0;
     while i < lines.len() {
@@ -362,7 +316,6 @@ fn apply_inline_word_diff(lines: &mut Vec<DiffLine>) {
     }
 }
 
-#[cfg(feature = "ssr")]
 fn find_matching_add(lines: &[DiffLine], start: usize) -> Option<usize> {
     for j in start..lines.len() {
         if lines[j].line_type == "add" {
@@ -375,7 +328,6 @@ fn find_matching_add(lines: &[DiffLine], start: usize) -> Option<usize> {
     None
 }
 
-#[cfg(feature = "ssr")]
 fn word_diff_html(old_text: &str, new_text: &str) -> String {
     let old_tokens = tokenize(old_text);
     let new_tokens = tokenize(new_text);
@@ -424,7 +376,6 @@ fn word_diff_html(old_text: &str, new_text: &str) -> String {
     html
 }
 
-#[cfg(feature = "ssr")]
 fn tokenize(s: &str) -> Vec<&str> {
     let mut tokens = Vec::new();
     let mut start = 0usize;
@@ -457,7 +408,6 @@ fn tokenize(s: &str) -> Vec<&str> {
     tokens
 }
 
-#[cfg(feature = "ssr")]
 fn lcs_indices<'a>(
     old: &[&'a str],
     new: &[&'a str],
@@ -498,7 +448,6 @@ fn lcs_indices<'a>(
     result
 }
 
-#[cfg(feature = "ssr")]
 fn escape_html(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")

@@ -21,7 +21,7 @@ pub async fn get_tree_entries(
     path: String,
 ) -> Result<Vec<EntryDto>, ServerFnError> {
     let repo_base: String = expect_context::<String>();
-    let raw = crate::git::list_directory(&repo_base, &username, &reponame, &revision, &path)
+    let raw = crate::server::git::list_directory(&repo_base, &username, &reponame, &revision, &path)
         .map_err(|e| ServerFnError::new(format!("Failed to read repository: {e}")))?;
     Ok(raw
         .into_iter()

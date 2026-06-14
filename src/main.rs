@@ -1,6 +1,6 @@
 #[cfg(feature = "ssr")]
 mod ssr_main {
-    use axum::{extract::Request, middleware, response::IntoResponse, Extension, Router};
+    use axum::{Extension, Router};
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use tower::ServiceBuilder;
@@ -8,10 +8,10 @@ mod ssr_main {
     use tower_http::services::ServeDir;
     use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-    use egit::{app::App, auth, db, git_routes::GitSmartHttpState};
-
-    #[derive(Clone)]
-    pub struct ResolvedTheme(pub String);
+    use egit::{
+        app::App,
+        server::{db, git_routes::GitSmartHttpState, middleware, shell},
+    };
 
     #[tokio::main]
     pub async fn main() {
@@ -60,15 +60,15 @@ mod ssr_main {
         let git_router = Router::new()
             .route(
                 "/{username}/{reponame}/info/refs",
-                axum::routing::get(egit::git_routes::handle_info_refs),
+                axum::routing::get(egit::server::git_routes::handle_info_refs),
             )
             .route(
                 "/{username}/{reponame}/git-upload-pack",
-                axum::routing::post(egit::git_routes::handle_upload_pack),
+                axum::routing::post(egit::server::git_routes::handle_upload_pack),
             )
             .route(
                 "/{username}/{reponame}/git-receive-pack",
-                axum::routing::post(egit::git_routes::handle_receive_pack),
+                axum::routing::post(egit::server::git_routes::handle_receive_pack),
             )
             .layer(Extension(git_state));
 
@@ -84,22 +84,22 @@ mod ssr_main {
                 {
                     let opts = leptos_options.clone();
                     let p = pool_shell.clone();
-                    move || shell(opts.clone(), p.clone())
+                    move || shell::html_shell(opts.clone(), p.clone())
                 },
             )
             .fallback(leptos_axum::file_and_error_handler({
                 let p = pool.clone();
                 move |opts: LeptosOptions| {
                     let p = p.clone();
-                    shell(opts, p)
+                    shell::html_shell(opts, p)
                 }
             }))
             .layer(
                 ServiceBuilder::new()
                     .layer(CompressionLayer::new())
-                    .layer(middleware::from_fn(move |req, next| {
+                    .layer(axum::middleware::from_fn(move |req, next| {
                         let pool = pool_mw.clone();
-                        theme_middleware(pool, req, next)
+                        middleware::theme_middleware(pool, req, next)
                     })),
             );
 
@@ -111,47 +111,6 @@ mod ssr_main {
         tracing::info!("eGit listening on http://{}", addr);
         let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
         axum::serve(listener, app.into_make_service()).await.unwrap();
-    }
-
-    async fn theme_middleware(
-        pool: sqlx::PgPool,
-        mut req: Request,
-        next: middleware::Next,
-    ) -> impl IntoResponse {
-        let sid = auth::session_id_from_headers(req.headers());
-        let theme = match auth::get_session(&pool, sid.as_deref()).await {
-            Some(s) => s.theme,
-            None => "dark".to_string(),
-        };
-        req.extensions_mut().insert(ResolvedTheme(theme));
-        next.run(req).await
-    }
-
-    fn shell(options: LeptosOptions, _pool: sqlx::PgPool) -> impl IntoView {
-        let theme = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current().block_on(async {
-                leptos_axum::extract::<axum::Extension<ResolvedTheme>>()
-                    .await
-                    .map(|ext| ext.0 .0.clone())
-                    .unwrap_or_else(|_| "dark".to_string())
-            })
-        });
-
-        view! {
-            <!DOCTYPE html>
-            <html lang="en" data-theme=theme>
-                <head>
-                    <meta charset="utf-8"/>
-                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                    <AutoReload options=options.clone()/>
-                    <HydrationScripts options=options islands=false/>
-                    <leptos_meta::MetaTags/>
-                </head>
-                <body class="bg-surface min-h-screen">
-                    <App/>
-                </body>
-            </html>
-        }
     }
 }
 

@@ -43,9 +43,9 @@ pub async fn get_repo_tab_meta(
     .map_err(|e| ServerFnError::new(format!("Database error: {e}")))?
     .flatten();
 
-    let default_branch = crate::git::get_default_branch(&repo_base, &username, &reponame)
+    let default_branch = crate::server::git::get_default_branch(&repo_base, &username, &reponame)
         .unwrap_or_else(|| "HEAD".to_string());
-    let has_commits = crate::git::has_commits(&repo_base, &username, &reponame);
+    let has_commits = crate::server::git::has_commits(&repo_base, &username, &reponame);
     Ok(RepoTabMeta { default_branch, has_commits, description })
 }
 
@@ -55,7 +55,7 @@ pub async fn get_branch_list(
     reponame: String,
 ) -> Result<Vec<String>, ServerFnError> {
     let repo_base: String = expect_context::<String>();
-    Ok(crate::git::list_branches(&repo_base, &username, &reponame))
+    Ok(crate::server::git::list_branches(&repo_base, &username, &reponame))
 }
 
 #[component]

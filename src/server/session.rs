@@ -14,7 +14,6 @@ pub struct Session {
     pub theme: String,
 }
 
-/// Look up a session by cookie value. Returns None if missing / expired.
 pub async fn get_session(pool: &PgPool, session_id: Option<&str>) -> Option<Session> {
     let session_id = session_id?;
     let session_uuid = Uuid::parse_str(session_id).ok()?;
@@ -41,7 +40,6 @@ pub async fn get_session(pool: &PgPool, session_id: Option<&str>) -> Option<Sess
     })
 }
 
-/// Create a new session row and return its UUID as a string.
 pub async fn create_session(pool: &PgPool, user_id: Uuid) -> anyhow::Result<String> {
     let expires_at = OffsetDateTime::now_utc() + Duration::days(SESSION_DURATION_DAYS);
 
@@ -60,7 +58,6 @@ pub async fn create_session(pool: &PgPool, user_id: Uuid) -> anyhow::Result<Stri
     Ok(row.id.to_string())
 }
 
-/// Delete a session row (logout).
 pub async fn delete_session(pool: &PgPool, session_id: &str) -> anyhow::Result<()> {
     if let Ok(id) = Uuid::parse_str(session_id) {
         sqlx::query!("DELETE FROM sessions WHERE id = $1", id)
@@ -70,7 +67,6 @@ pub async fn delete_session(pool: &PgPool, session_id: &str) -> anyhow::Result<(
     Ok(())
 }
 
-/// Build a Set-Cookie header value for a new session.
 pub fn make_session_cookie(session_id: &str) -> String {
     let expires = OffsetDateTime::now_utc() + Duration::days(SESSION_DURATION_DAYS);
     Cookie::build((SESSION_COOKIE, session_id.to_string()))
@@ -81,7 +77,6 @@ pub fn make_session_cookie(session_id: &str) -> String {
         .to_string()
 }
 
-/// Build a Set-Cookie header value that clears the session cookie.
 pub fn clear_session_cookie() -> String {
     Cookie::build((SESSION_COOKIE, ""))
         .http_only(true)
@@ -91,7 +86,6 @@ pub fn clear_session_cookie() -> String {
         .to_string()
 }
 
-/// Extract the session cookie value from request headers.
 pub fn session_id_from_headers(headers: &HeaderMap) -> Option<String> {
     let cookie_header = headers.get("cookie")?.to_str().ok()?;
     cookie_header
