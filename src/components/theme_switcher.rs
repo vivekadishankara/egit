@@ -1,6 +1,6 @@
 use leptos::prelude::*;
 
-use crate::pages::auth::{set_theme, SetTheme, THEMES};
+use crate::pages::auth::{SetTheme, THEMES};
 
 /// Dropdown that lets the logged-in user change their theme.
 /// Immediately updates `document.documentElement.dataset.theme` on the client
