@@ -259,18 +259,18 @@ pub fn PullDetailPage() -> impl IntoView {
                                                                             "Changes"
                                                                         </h3>
                                                                         <Suspense fallback=|| view! { <p class="text-muted">"Loading diff..."</p> }>
-                                                                            {move || {
-                                                                                diff_state.get().map(|diff_str| {
-                                                                                    match diff_str {
-                                                                                        Some(d) if !d.is_empty() => {
-                                                                                            view! { <DiffViewer diff=d.clone()/> }.into_any()
-                                                                                        }
-                                                                                        _ => {
-                                                                                            view! { <p class="text-sm text-muted">"No changes between these branches."</p> }.into_any()
-                                                                                        }
-                                                                                    }
-                                                                                })
-                                                                            }}
+                                                                             {move || {
+                                                                                 diff_state.get().map(|diff_files| {
+                                                                                     match diff_files {
+                                                                                         Some(files) if !files.is_empty() => {
+                                                                                             view! { <DiffViewer files=files.clone()/> }.into_any()
+                                                                                         }
+                                                                                         _ => {
+                                                                                             view! { <p class="text-sm text-muted">"No changes between these branches."</p> }.into_any()
+                                                                                         }
+                                                                                     }
+                                                                                 })
+                                                                             }}
                                                                         </Suspense>
                                                                     </div>
                                                                 }

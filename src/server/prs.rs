@@ -377,7 +377,7 @@ pub async fn get_pr_diff(
     reponame: String,
     head_branch: String,
     base_branch: String,
-) -> Result<String, ServerFnError> {
+) -> Result<Vec<crate::diff::DiffFile>, ServerFnError> {
     let repo_base: String = expect_context::<String>();
     crate::git::get_pr_diff(&repo_base, &username, &reponame, &head_branch, &base_branch)
         .map_err(|e| ServerFnError::new(format!("Failed to get diff: {e}")))

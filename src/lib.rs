@@ -1,9 +1,12 @@
 pub mod app;
 pub mod components;
+pub mod diff;
 pub mod pages;
 
 #[cfg(feature = "ssr")]
 pub mod db;
+#[cfg(feature = "ssr")]
+pub mod syntax;
 
 #[cfg(feature = "ssr")]
 pub mod auth;

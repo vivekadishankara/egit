@@ -272,30 +272,120 @@ body {
 
     /* Diff viewer */
     .diff-viewer {
+        @apply rounded-md border text-sm font-mono overflow-x-auto;
         background-color: var(--color-bg-secondary);
-        border: 1px solid var(--color-border);
-        @apply rounded-md p-0 text-sm font-mono overflow-x-auto;
+        border-color: var(--color-border);
     }
-    .diff-viewer .diff-content {
-        @apply block px-4 py-0 leading-relaxed whitespace-pre;
+
+    /* File sections */
+    .diff-file + .diff-file {
+        border-top: 1px solid var(--color-border);
     }
-    .diff-viewer .diff-info .diff-content {
+    .diff-file-header {
+        @apply flex items-center justify-between px-4 py-2 cursor-pointer select-none;
+        background-color: color-mix(in srgb, var(--color-bg-secondary) 97%, var(--color-text));
+    }
+    .diff-file-header:hover {
+        background-color: color-mix(in srgb, var(--color-bg-secondary) 94%, var(--color-text));
+    }
+    .diff-file-header-left {
+        @apply flex items-center gap-2 min-w-0;
+    }
+    .diff-file-icon {
         color: var(--color-text-muted);
+        @apply flex-shrink-0 text-xs;
     }
-    .diff-viewer .diff-hunk .diff-content {
+    .diff-file-path {
+        @apply font-mono text-sm truncate;
+        color: var(--color-text);
+    }
+    .diff-file-header-right {
+        @apply flex items-center gap-2 flex-shrink-0 ml-3;
+    }
+    .diff-stat-add {
+        color: var(--color-success);
+        @apply text-xs font-medium;
+    }
+    .diff-stat-del {
+        color: var(--color-danger);
+        @apply text-xs font-medium ml-1;
+    }
+    .diff-collapse-icon {
+        color: var(--color-text-muted);
+        @apply text-xs ml-1;
+    }
+
+    /* Mini bar */
+    .diff-bar {
+        @apply inline-flex w-16 h-2 rounded-full overflow-hidden;
+        background-color: var(--color-border);
+    }
+    .diff-bar-add {
+        background-color: var(--color-success);
+        @apply h-full;
+    }
+    .diff-bar-del {
+        background-color: var(--color-danger);
+        @apply h-full;
+    }
+
+    /* Hunk header */
+    .diff-hunk-header {
+        @apply px-4 py-0.5 text-xs font-mono;
+        background-color: color-mix(in srgb, var(--color-accent) 8%, transparent);
         color: var(--color-accent);
+        border-top: 1px solid var(--color-border);
+        border-bottom: 1px solid var(--color-border);
     }
-    .diff-viewer .diff-add {
+
+    /* Single line row */
+    .diff-line {
+        @apply flex text-sm font-mono leading-relaxed;
+        min-height: 1.5rem;
+    }
+
+    /* Line numbers */
+    .diff-line-num-old,
+    .diff-line-num-new {
+        @apply w-[52px] min-w-[52px] px-2 py-0 text-right text-xs select-none;
+        color: var(--color-text-muted);
+        border-right: 1px solid var(--color-border);
+        vertical-align: top;
+        background-color: color-mix(in srgb, var(--color-bg-secondary) 98%, var(--color-text));
+    }
+
+    /* Line backgrounds */
+    .diff-line-add {
         background-color: color-mix(in srgb, var(--color-success) 15%, transparent);
     }
-    .diff-viewer .diff-add .diff-content {
-        color: var(--color-text);
-    }
-    .diff-viewer .diff-del {
+    .diff-line-del {
         background-color: color-mix(in srgb, var(--color-danger) 15%, transparent);
     }
-    .diff-viewer .diff-del .diff-content {
+    .diff-line-add .diff-line-num-new {
+        background-color: color-mix(in srgb, var(--color-success) 20%, transparent);
+    }
+    .diff-line-del .diff-line-num-old {
+        background-color: color-mix(in srgb, var(--color-danger) 20%, transparent);
+    }
+
+    /* Line content */
+    .diff-line-content {
+        @apply px-4 py-0 whitespace-pre flex-1;
+        min-width: 0;
         color: var(--color-text);
+    }
+    .diff-line-content [style*="background"] {
+        background: transparent !important;
+    }
+
+    /* Inline word diff */
+    .diff-word-add {
+        background-color: color-mix(in srgb, var(--color-success) 40%, transparent);
+        border-radius: 2px;
+    }
+    .diff-word-del {
+        background-color: color-mix(in srgb, var(--color-danger) 40%, transparent);
+        border-radius: 2px;
     }
 
     /* Markdown */

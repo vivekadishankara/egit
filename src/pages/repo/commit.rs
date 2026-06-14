@@ -13,7 +13,7 @@ pub struct CommitDetail {
     pub message: String,
     pub message_body: String,
     pub timestamp: i64,
-    pub diff: String,
+    pub diff: Vec<crate::diff::DiffFile>,
     pub files_changed: usize,
     pub insertions: usize,
     pub deletions: usize,
@@ -165,7 +165,7 @@ pub fn CommitPage() -> impl IntoView {
                                         </span>
                                     </div>
 
-                                    <DiffViewer diff=d.diff.clone()/>
+                                    <DiffViewer files=d.diff.clone()/>
                                 </div>
                             }.into_any()
                         }

@@ -1,8 +1,6 @@
-#![cfg_attr(not(feature = "ssr"), allow(unused_imports))]
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 use serde::{Deserialize, Serialize};
-use std::sync::OnceLock;
 
 use crate::components::repo_header::RepoHeader;
 use crate::components::clone_button::CloneButton;
@@ -19,33 +17,8 @@ pub struct BlobData {
 }
 
 #[cfg(feature = "ssr")]
-fn syntax_set() -> &'static syntect::parsing::SyntaxSet {
-    static SS: OnceLock<syntect::parsing::SyntaxSet> = OnceLock::new();
-    SS.get_or_init(|| syntect::parsing::SyntaxSet::load_defaults_newlines())
-}
-
-#[cfg(feature = "ssr")]
-fn theme_set() -> &'static syntect::highlighting::ThemeSet {
-    static TS: OnceLock<syntect::highlighting::ThemeSet> = OnceLock::new();
-    TS.get_or_init(|| syntect::highlighting::ThemeSet::load_defaults())
-}
-
-#[cfg(feature = "ssr")]
 fn highlight(code: &str, extension: &str) -> String {
-    let ss = syntax_set();
-    let ts = theme_set();
-
-    let syntax = ss
-        .find_syntax_by_extension(extension)
-        .unwrap_or_else(|| ss.find_syntax_plain_text());
-
-    let theme = ts
-        .themes
-        .get("base16-ocean.dark")
-        .unwrap_or_else(|| ts.themes.values().next().unwrap());
-
-    syntect::html::highlighted_html_for_string(code, ss, syntax, theme)
-        .unwrap_or_else(|e| format!("<pre>Highlight error: {e}</pre>"))
+    crate::syntax::highlight(code, extension)
 }
 
 #[server(GetBlobContent, "/api")]

@@ -1,6 +1,8 @@
 use gix::hash::ObjectId;
 use std::path::{Path, PathBuf};
 
+use crate::diff::DiffFile;
+
 /// Initialize a new bare git repository at the given path.
 pub fn init_bare(path: &Path) -> anyhow::Result<()> {
     use std::process::Command;
@@ -311,7 +313,7 @@ pub struct CommitDetail {
     pub message: String,
     pub message_body: String,
     pub timestamp: i64,
-    pub diff: String,
+    pub diff: Vec<DiffFile>,
     pub files_changed: usize,
     pub insertions: usize,
     pub deletions: usize,
@@ -345,17 +347,13 @@ pub fn get_commit_detail(
         None => (msg.clone(), String::new()),
     };
 
-    let diff = get_commit_diff_internal(&path, &hex)?;
+    let raw_diff = get_commit_diff_internal(&path, &hex)?;
+    let diff = crate::diff::parse_diff(&raw_diff);
+    let diff = highlight_diff_files(diff);
 
-    let files_changed = diff.lines().filter(|l| l.starts_with("diff --git")).count();
-    let insertions = diff
-        .lines()
-        .filter(|l| l.starts_with('+') && !l.starts_with("+++"))
-        .count();
-    let deletions = diff
-        .lines()
-        .filter(|l| l.starts_with('-') && !l.starts_with("---"))
-        .count();
+    let files_changed = diff.len();
+    let insertions: u32 = diff.iter().map(|f| f.stats.additions).sum();
+    let deletions: u32 = diff.iter().map(|f| f.stats.deletions).sum();
 
     Ok(CommitDetail {
         id: hex.clone(),
@@ -367,8 +365,8 @@ pub fn get_commit_detail(
         timestamp: time.seconds,
         diff,
         files_changed,
-        insertions,
-        deletions,
+        insertions: insertions as usize,
+        deletions: deletions as usize,
     })
 }
 
@@ -459,7 +457,7 @@ pub fn get_pr_diff(
     reponame: &str,
     head_branch: &str,
     base_branch: &str,
-) -> anyhow::Result<String> {
+) -> anyhow::Result<Vec<DiffFile>> {
     let path = repo_path(repo_base, username, reponame);
     
     let output = std::process::Command::new("git")
@@ -477,5 +475,24 @@ pub fn get_pr_diff(
         );
     }
     
-    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    let raw = String::from_utf8_lossy(&output.stdout).to_string();
+    let diff = crate::diff::parse_diff(&raw);
+    Ok(highlight_diff_files(diff))
+}
+
+/// Apply syntax highlighting to all lines in a parsed diff.
+fn highlight_diff_files(mut files: Vec<DiffFile>) -> Vec<DiffFile> {
+    for file in &mut files {
+        if file.status == "binary" {
+            continue;
+        }
+        for hunk in &mut file.hunks {
+            for line in &mut hunk.lines {
+                if !line.content.is_empty() {
+                    line.highlighted = crate::syntax::highlight_line(&line.content, &file.extension);
+                }
+            }
+        }
+    }
+    files
 }
