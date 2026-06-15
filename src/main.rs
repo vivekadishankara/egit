@@ -1,3 +1,4 @@
+#![recursion_limit = "512"]
 #[cfg(feature = "ssr")]
 mod ssr_main {
     use axum::{Extension, Router};
@@ -74,6 +75,7 @@ mod ssr_main {
 
         let app_router = Router::new()
             .nest_service("/pkg", ServeDir::new(pkg_path))
+            .nest_service("/assets", ServeDir::new("public"))
             .leptos_routes_with_context(
                 &leptos_options,
                 routes,
