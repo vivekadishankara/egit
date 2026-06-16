@@ -9,7 +9,7 @@ use crate::components::repo_tab_bar::{url_encode_branch, BranchSelector, RepoTab
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlobData {
     pub content: String,
-    pub highlighted: String,
+    pub highlighted_lines: Vec<String>,
     pub extension: String,
     pub size: usize,
     pub is_binary: bool,
@@ -17,8 +17,8 @@ pub struct BlobData {
 }
 
 #[cfg(feature = "ssr")]
-fn highlight(code: &str, extension: &str) -> String {
-    crate::server::syntax::highlight(code, extension)
+fn highlight_lines(code: &str, extension: &str) -> Vec<String> {
+    crate::server::syntax::highlight_lines(code, extension)
 }
 
 #[server(GetBlobContent, "/api")]
@@ -35,19 +35,19 @@ pub async fn get_blob_content(
 
     let is_binary = data.contains(&0);
 
-    let (content, highlighted, line_count) = if is_binary {
+    let (content, highlighted_lines, line_count) = if is_binary {
         let info = format!("Binary file ({} bytes)", data.len());
-        (info.clone(), format!("<pre class=\"text-muted text-sm\">{info}</pre>"), 0)
+        (info.clone(), vec![], 0)
     } else {
         let s = String::from_utf8_lossy(&data).to_string();
         let lines = s.lines().count();
-        let html = highlight(&s, &ext);
-        (s, html, lines)
+        let per_line = highlight_lines(&s, &ext);
+        (s, per_line, lines)
     };
 
     Ok(BlobData {
         content,
-        highlighted,
+        highlighted_lines,
         extension: ext,
         size: data.len(),
         is_binary,
@@ -183,10 +183,24 @@ pub fn BlobPage() -> impl IntoView {
                                             view! { <span></span> }.into_any()
                                         }}
                                     </div>
-                                    <div
-                                        class="overflow-x-auto text-sm leading-relaxed [&_pre]:!bg-transparent"
-                                        inner_html=data.highlighted
-                                    ></div>
+                                    {if !data.is_binary {
+                                        view! {
+                                            <div class="overflow-x-auto text-sm font-mono">
+                                                {data.highlighted_lines.iter().enumerate().map(|(i, html)| {
+                                                    view! {
+                                                        <div class="diff-line">
+                                                            <span class="diff-line-num-new">{i + 1}</span>
+                                                            <div class="diff-line-content" inner_html=html.clone()></div>
+                                                        </div>
+                                                    }
+                                                }).collect::<Vec<_>>()}
+                                            </div>
+                                        }.into_any()
+                                    } else {
+                                        view! {
+                                            <pre class="text-muted text-sm">{data.content.clone()}</pre>
+                                        }.into_any()
+                                    }}
                                 </div>
                             }.into_any()
                         }

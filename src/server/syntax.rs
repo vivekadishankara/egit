@@ -38,6 +38,37 @@ fn replace_syntax_colors(html: &str) -> String {
     result
 }
 
+pub fn highlight_lines(code: &str, extension: &str) -> Vec<String> {
+    let ss = syntax_set();
+    let ts = theme_set();
+
+    let syntax = ss
+        .find_syntax_by_extension(extension)
+        .unwrap_or_else(|| ss.find_syntax_plain_text());
+
+    let theme = ts
+        .themes
+        .get("base16-ocean.dark")
+        .unwrap_or_else(|| ts.themes.values().next().unwrap());
+
+    let mut highlighter =
+        syntect::easy::HighlightLines::new(syntax, theme);
+
+    code.lines()
+        .map(|line| {
+            let ranges = highlighter
+                .highlight_line(line, ss)
+                .unwrap_or_default();
+            let html = syntect::html::styled_line_to_highlighted_html(
+                &ranges,
+                syntect::html::IncludeBackground::No,
+            )
+            .unwrap_or_else(|_| line.to_string());
+            replace_syntax_colors(&html)
+        })
+        .collect()
+}
+
 pub fn highlight(code: &str, extension: &str) -> String {
     let ss = syntax_set();
     let ts = theme_set();
