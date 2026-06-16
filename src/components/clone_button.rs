@@ -4,10 +4,10 @@ fn get_http_url(owner: &str, name: &str) -> String {
     #[cfg(feature = "hydrate")]
     if let Some(window) = web_sys::window() {
         if let Ok(origin) = window.location().origin() {
-            return format!("{}/{}/{}", origin, owner, name);
+            return format!("{}/{}/{}.git", origin, owner, name);
         }
     }
-    format!("http://localhost:3000/{}/{}", owner, name)
+    format!("http://localhost:3000/{}/{}.git", owner, name)
 }
 
 fn get_ssh_url(owner: &str, name: &str) -> String {
